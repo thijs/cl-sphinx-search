@@ -4,6 +4,6 @@
 
 (defpackage #:com.oppermannen.sphinx-search-api
   (:nicknames "sphinx-search-api")
-  (:use :cl :usocket :cl-pack)
+  (:use :cl :iolib.sockets :cl-pack)
   (:export #:bla))
 
