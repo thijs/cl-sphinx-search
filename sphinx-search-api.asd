@@ -5,6 +5,10 @@
 (defpackage #:com.oppermannen.sphinx-search-api-asd
   (:use :cl :asdf))
 
+(asdf:operate 'asdf:load-op :ieee-floats)
+(asdf:operate 'asdf:load-op :cl-pack)
+
+
 
 (in-package #:com.oppermannen.sphinx-search-api-asd)
 
@@ -21,4 +25,4 @@
                (:file "sphinx-search-api-config")
                (:file "constants")
                (:file "sphinx-search-api"))
-  :depends-on (:cl-pack))
+  :depends-on (:usocket :cl-pack))

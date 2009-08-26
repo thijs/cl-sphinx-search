@@ -4,23 +4,23 @@
 
 
 (defclass sphinx-client ()
-  ((host
-    :accessor host
+  ((sphinx-host
+    :accessor sphinx-host
     :initarg :host
     :initform "localhost"
     :documentation "searchd host (default is 'localhost')")
-   (port
-    :accessor port
+   (sphinx-port
+    :accessor sphinx-port
     :initarg :port
     :initform 3312
     :documentation "searchd port (default is 3312)")
-   (path
-    :accessor path
+   (sphinx-path
+    :accessor sphinx-path
     :initarg :path
     :initform ()
     :documentation "searchd unix-domain socket path")
-   (socket
-    :accessor socket
+   (sphinx-socket
+    :accessor sphinx-socket
     :initarg :socket
     :initform ()
     :documentation "searchd unix-domain socket")
@@ -44,24 +44,24 @@
     :initarg :weights
     :initform ()
     :documentation "per-field weights (default is 1 for all fields)")
-   (sort
-    :accessor sort
-    :initarg :sort
+   (sort-mode
+    :accessor sort-mode
+    :initarg :sort-mode
     :initform +sph-sort-relevance+
     :documentation "match sorting mode (default is +sph-sort-relevance+)")
-   (sortby
-    :accessor sortby
-    :initarg :sortby
+   (sort-by
+    :accessor sort-by
+    :initarg :sort-by
     :initform ""
     :documentation "attribute to sort by (defualt is '')")
-   (min_id
-    :accessor min_id
-    :initarg :min_id
+   (min-id
+    :accessor min-id
+    :initarg :min-id
     :initform 0
     :documentation "min ID to match (default is 0)")
-   (max_id
-    :accessor max_id
-    :initarg :max_id
+   (max-id
+    :accessor max-id
+    :initarg :max-id
     :initform ()
     :documentation "max ID to match (default is max value for uint on system)")
    (filters
@@ -158,5 +158,30 @@
     :accessor reqs
     :initarg :reqs
     :initform ()
-    :documentation "requests array for multi-query"))
+    :documentation "requests array for multi-query")))
+
+
+
+(defmethod set-server ((sph-obj sphinx-client) &key host port)
+  (format t "~s : ~s" host port)
+  (assert (stringp host))
+  (cond ((string= host "/" :start1 0 :end1 1)
+         (setf (sphinx-path sph-obj) host)
+         (setf (sphinx-host sph-obj) ())
+         (setf (sphinx-port sph-obj) ()))
+        ((string= host "unix://" :start1 0 :end1 7)
+         (setf (sphinx-path sph-obj) (subseq host 6 (length host)))
+         (setf (sphinx-host sph-obj) ())
+         (setf (sphinx-port sph-obj) ()))
+        (t
+         (format t "~s : ~s" host port)
+         (assert (numberp port))
+         (setf (sphinx-host sph-obj) host)
+         (setf (sphinx-port sph-obj) port)
+         (setf (sphinx-path sph-obj) ()))))
+
+
+(defmethod connect ((sph-obj sphinx-client))
+  (cond ((sphinx-socket sph-obj))
+        ((sphinx-path sph-obj)
 

@@ -2,9 +2,8 @@
 
 (in-package #:cl-user)
 
-
 (defpackage #:com.oppermannen.sphinx-search-api
   (:nicknames "sphinx-search-api")
-  (:use :cl)
+  (:use :cl :usocket :cl-pack)
   (:export #:bla))
 
