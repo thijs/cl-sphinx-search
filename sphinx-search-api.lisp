@@ -257,6 +257,15 @@
                  (setf (last-warning client) "searchd v.x.x is older than client's v.y.y, some options might not work"))
                response))))))
 
+(defmethod set-limits ((client sphinx-client) &key offset limit max cutoff)
+  (assert (and (numberp offset) (numberp limit) (>= offset 0) (>= limit 0)))
+  (assert (and (numberp max) (>= max 0)))
+  (setf (offset client) offset)
+  (setf (limit client) limit)
+  (when (> max 0)
+    (setf (maxmatches client) max))
+  (when (>= cutoff 0)
+    (setf (cutoff client) cutoff)))
 
 
 
