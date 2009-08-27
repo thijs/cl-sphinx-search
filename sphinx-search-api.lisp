@@ -199,7 +199,7 @@
           (setf (last-error client) "connection to socket failed"))
         (progn
           (sockets:send-to (sphinx-socket client)
-                           (sb-ext:string-to-octets (pack "N" 1) :external-format :latin-1))
+                           (string-to-octets (pack "N" 1) :external-format :utf-8))
           (format t "~a~%" v)
           (sphinx-socket client)))))
 
@@ -207,10 +207,10 @@
   (let ((rec (sockets:receive-from socket :size size)))
     (format t "~a~%" rec)
     (let ((res
-           (sb-ext:octets-to-string
+           (octets-to-string
             (coerce rec
                     '(vector (unsigned-byte 8)))
-            :external-format :latin-1)))
+            :external-format :utf-8)))
       (format t "res: ~a~%" res)
       res)))
 
@@ -263,5 +263,13 @@
   (when (and cutoff (>= cutoff 0))
     (setf (cutoff client) cutoff)))
 
+
+(defmethod add-query ((client sphinx-client) &key query (index "*") (comment ""))
+  (let ((req (concatenate 'string
+                          (pack "NNNNN" (offset client) (limit client) (mode client) (ranker client) (sort-mode client))
+                          (pack "N/a*" (sort-by client))
+                          ;;(pack "N/a*" (string-to-octets query))
+                          (pack "N*" (length (weights client)) (weights client)))))
+    req))
 
 

@@ -25,4 +25,6 @@
                (:file "sphinx-search-api-config")
                (:file "constants")
                (:file "sphinx-search-api"))
-  :depends-on (:iolib.sockets :cl-pack))
+  :depends-on (:iolib.sockets
+               :cl-pack
+               :babel))
