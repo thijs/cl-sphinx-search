@@ -192,11 +192,7 @@
                (sockets:make-socket :address-family :internet :type :stream
                                     :remote-host (sphinx-host client)
                                     :remote-port (sphinx-port client)))))
-  (let ((v (unpack "N*" (sb-ext:octets-to-string
-                         (coerce
-                          (sockets:receive-from (sphinx-socket client) :size 4)
-                          '(vector (unsigned-byte 8)))
-                         :external-format :latin-1))))
+  (let ((v (unpack "N*" (read-from (sphinx-socket client) 4))))
     (if (< v 1)
         (progn
           (close (sphinx-socket client))
@@ -264,7 +260,7 @@
   (setf (limit client) limit)
   (when (> max 0)
     (setf (maxmatches client) max))
-  (when (>= cutoff 0)
+  (when (and cutoff (>= cutoff 0))
     (setf (cutoff client) cutoff)))
 
 
