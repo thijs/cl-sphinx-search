@@ -4,23 +4,23 @@
 
 
 (defclass sphinx-client ()
-  ((sphinx-host
-    :accessor sphinx-host
+  ((%host
+    :accessor %host
     :initarg :host
     :initform "localhost"
     :documentation "searchd host (default is 'localhost')")
-   (sphinx-port
-    :accessor sphinx-port
+   (%port
+    :accessor %port
     :initarg :port
     :initform 3312
     :documentation "searchd port (default is 3312)")
-   (sphinx-path
-    :accessor sphinx-path
+   (%path
+    :accessor %path
     :initarg :path
     :initform ()
     :documentation "searchd unix-domain socket path")
-   (sphinx-socket
-    :accessor sphinx-socket
+   (%socket
+    :accessor %socket
     :initarg :socket
     :initform ()
     :documentation "searchd unix-domain socket")
@@ -68,30 +68,30 @@
     :accessor filters
     :initarg :filters
     :initform ()
-    :documentation "search filters")
-   (groupby
-    :accessor groupby
-    :initarg :groupby
+    :documentation "search filters; a list of hashes")
+   (group-by
+    :accessor group-by
+    :initarg :group-by
     :initform ""
     :documentation "group-by attribute name")
-   (groupfunc
-    :accessor groupfunc
-    :initarg :groupfunc
+   (group-function
+    :accessor group-function
+    :initarg :group-function
     :initform +sph-groupby-day+
     :documentation "group-by function (to pre-process group-by attribute value with; default +sph-groupby-day+)")
-   (groupsort
-    :accessor groupsort
-    :initarg :groupsort
+   (group-sort
+    :accessor group-sort
+    :initarg :group-sort
     :initform "@group desc"
     :documentation "group-by sorting clause (to sort groups in result set with; default '@group desc')")
-   (groupdistinct
-    :accessor groupdistinct
-    :initarg :groupdistinct
+   (group-distinct
+    :accessor group-distinct
+    :initarg :group-distinct
     :initform ""
     :documentation "group-by count-distinct attribute")
-   (maxmatches
-    :accessor maxmatches
-    :initarg :maxmatches
+   (max-matches
+    :accessor max-matches
+    :initarg :max-matches
     :initform 1000
     :documentation "max matches to retrieve (default is 1000)")
    (cutoff
@@ -99,24 +99,24 @@
     :initarg :cutoff
     :initform ()
     :documentation "cutoff to stop searching at")
-   (retrycount
-    :accessor retrycount
-    :initarg :retrycount
+   (retry-count
+    :accessor retry-count
+    :initarg :retry-count
     :initform 0
     :documentation "distributed retry count")
-   (retrydelay
-    :accessor retrydelay
-    :initarg :retrydelay
+   (retry-delay
+    :accessor retry-delay
+    :initarg :retry-delay
     :initform 0
     :documentation "distributed retry delay")
    (anchor
     :accessor anchor
     :initarg :anchor
     :initform ()
-    :documentation "geographical anchor point")
-   (indexweights
-    :accessor indexweights
-    :initarg :indexweights
+    :documentation "geographical anchor point; fixed length list with '(attrlat lat attrlon lon)")
+   (index-weights
+    :accessor index-weights
+    :initarg :index-weights
     :initform ()
     :documentation "per-index weights")
    (ranker
@@ -124,14 +124,14 @@
     :initarg :ranker
     :initform +sph-rank-proximity-bm25+
     :documentation "ranking mode (default is +sph-rank-proximity-bm25+)")
-   (maxquerytime
-    :accessor maxquerytime
-    :initarg :maxquerytime
+   (max-query-time
+    :accessor max-query-time
+    :initarg :max-query-time
     :initform 0
     :documentation "max query time, milliseconds (default is 0, do not limit)")
-   (fieldweights
-    :accessor fieldweights
-    :initarg :fieldweights
+   (field-weights
+    :accessor field-weights
+    :initarg :field-weights
     :initform ()
     :documentation "per-field-name weights")
    (overrides
@@ -166,42 +166,42 @@
   (format t "~s : ~s" host port)
   (assert (stringp host))
   (cond ((string= host "/" :start1 0 :end1 1)
-         (setf (sphinx-path client) host)
-         (setf (sphinx-host client) ())
-         (setf (sphinx-port client) ()))
+         (setf (%path client) host)
+         (setf (%host client) ())
+         (setf (%port client) ()))
         ((string= host "unix://" :start1 0 :end1 7)
-         (setf (sphinx-path client) (subseq host 6 (length host)))
-         (setf (sphinx-host client) ())
-         (setf (sphinx-port client) ()))
+         (setf (%path client) (subseq host 6 (length host)))
+         (setf (%host client) ())
+         (setf (%port client) ()))
         (t
          (format t "~s : ~s" host port)
          (assert (numberp port))
-         (setf (sphinx-host client) host)
-         (setf (sphinx-port client) port)
-         (setf (sphinx-path client) ()))))
+         (setf (%host client) host)
+         (setf (%port client) port)
+         (setf (%path client) ()))))
 
 
 (defmethod %connect ((client sphinx-client))
-  (cond ((sphinx-socket client))
-        ((sphinx-path client)
-         (setf (sphinx-socket client)
+  (cond ((%socket client))
+        ((%path client)
+         (setf (%socket client)
                (sockets:make-socket :address-family :local :type :stream
-                            :local-filename (namestring (sphinx-path client)))))
+                            :local-filename (namestring (%path client)))))
         (t
-         (setf (sphinx-socket client)
+         (setf (%socket client)
                (sockets:make-socket :address-family :internet :type :stream
-                                    :remote-host (sphinx-host client)
-                                    :remote-port (sphinx-port client)))))
-  (let ((v (unpack "N*" (read-from (sphinx-socket client) 4))))
+                                    :remote-host (%host client)
+                                    :remote-port (%port client)))))
+  (let ((v (unpack "N*" (read-from (%socket client) 4))))
     (if (< v 1)
         (progn
-          (close (sphinx-socket client))
+          (close (%socket client))
           (setf (last-error client) "connection to socket failed"))
         (progn
-          (sockets:send-to (sphinx-socket client)
-                           (string-to-octets (pack "N" 1) :external-format :utf-8))
+          (sockets:send-to (%socket client)
+                           (string-to-octets (pack "N" 1) :encoding :utf-8))
           (format t "~a~%" v)
-          (sphinx-socket client)))))
+          (%socket client)))))
 
 (defun read-from (socket size)
   (let ((rec (sockets:receive-from socket :size size)))
@@ -210,19 +210,19 @@
            (octets-to-string
             (coerce rec
                     '(vector (unsigned-byte 8)))
-            :external-format :utf-8)))
+            :encoding :utf-8)))
       (format t "res: ~a~%" res)
       res)))
 
 (defmethod %get-response ((client sphinx-client) &key client-version)
-  (multiple-value-bind (status version len) (unpack "n2N" (read-from (sphinx-socket client) 8))
+  (multiple-value-bind (status version len) (unpack "n2N" (read-from (%socket client) 8))
     (format t "~a : ~a : ~a~%" status version len)
     (let ((response ())
           (left len))
       (loop
          (when (< left 0)
            (return))
-         (let ((chunk (read-from (sphinx-socket client) left)))
+         (let ((chunk (read-from (%socket client) left)))
            (if (> (length chunk) 0)
                (progn
                  (setf response (concatenate 'vector response chunk))
@@ -259,17 +259,63 @@
   (setf (offset client) offset)
   (setf (limit client) limit)
   (when (> max 0)
-    (setf (maxmatches client) max))
+    (setf (max-matches client) max))
   (when (and cutoff (>= cutoff 0))
     (setf (cutoff client) cutoff)))
 
 
 (defmethod add-query ((client sphinx-client) &key query (index "*") (comment ""))
-  (let ((req (concatenate 'string
+ (let ((req (concatenate 'string
                           (pack "NNNNN" (offset client) (limit client) (mode client) (ranker client) (sort-mode client))
                           (pack "N/a*" (sort-by client))
-                          ;;(pack "N/a*" (string-to-octets query))
-                          (pack "N*" (length (weights client)) (weights client)))))
-    req))
+                          (pack "N/a*" query)
+                          (pack "N*" (length (weights client)) (weights client))
+                          (pack "N/a*" index)
+                          (pack "N" 1) (pack "Q>" (min-id client)) (pack "Q>" (max-id client))
+                          (pack "N" (length (filters client)))
+                          (map #'(lambda (filter)
+                                   (concatenate 'string
+                                                (pack "N/a*" (gethash 'attr filter))
+                                                (let ((type (gethash 'type filter)))
+                                                  (concatenate 'string
+                                                               (pack "N" type)
+                                                               (cond ((eql type +sph-filter-values+)
+                                                                      (pack-array-signed-quads (get-hash 'values filter)))
+                                                                     ((eql type +sph-filter-range+)
+                                                                      (concatenate 'string (pack "q>" (get-hash 'min filter))
+                                                                                           (pack "q>" (get-hash 'max filter))))
+                                                                     ((eql type +sph-filter-floatrange+)
+                                                                      (concatenate 'string (pack-float (get-hash 'min filter))
+                                                                                           (pack-float (get-hash 'max filter))))
+                                                                     (t
+                                                                      (error "Unhandled filter type ~S" type)))
+                                                               (pack "N" (get-hash 'exclude filter))))))
+                               (filters client))
+                          (pack "NN/a*" (group-function client) (group-by client))
+                          (pack "N" (max-matches client))
+                          (pack "N/a*" (group-sort client))
+                          (pack "NNN" (cutoff client) (retry-count client) (retry-delay client))
+                          (pack "N/a*" (group-distinct client))
+                          (cond ((anchor client)
+                                 (concatenate 'string
+                                              (pack "N/a*" (first (anchor client)))
+                                              (pack "N/a*" (third (anchor client)))
+                                              (pack-float (second (anchor client)))
+                                              (pack-float (last (anchor client)))))
+                                (t
+                                 (pack "N" 0)))
+
+
+
+
+(defun pack-array-signed-quads (values-list)
+  (concatenate 'string
+               (pack "N" (length values-list))
+               (map #'(lambda (value)
+                        (pack "q>" value)) values-list)))
+
+(defun pack-float (float-value)
+  (pack "N" (unpack "L*" (pack "f" float-value))))
+
 
 
