@@ -14,7 +14,7 @@ use IO::Socket::UNIX;
 use Encode qw/encode_utf8 decode_utf8/;
 
 my $is_native64 = $Config{longsize} == 8 || defined $Config{use64bitint} || defined $Config{use64bitall};
-    
+
 
 =head1 NAME
 
@@ -66,7 +66,7 @@ search engine, L<http://www.sphinxsearch.com>.
 =cut
 
 # Constants to export.
-our @EXPORT = qw(	
+our @EXPORT = qw(
 		SPH_MATCH_ALL SPH_MATCH_ANY SPH_MATCH_PHRASE SPH_MATCH_BOOLEAN SPH_MATCH_EXTENDED
 		SPH_MATCH_FULLSCAN SPH_MATCH_EXTENDED2
 		SPH_RANK_PROXIMITY_BM25 SPH_RANK_BM25 SPH_RANK_NONE SPH_RANK_WORDCOUNT
@@ -176,7 +176,7 @@ sub _sphPackI64array {
 }
 
 # portably unpack 64 unsigned bits, network order to numeric
-sub _sphUnpackU64 
+sub _sphUnpackU64
 {
     my $self = shift;
     my $v = shift;
@@ -189,12 +189,12 @@ sub _sphUnpackU64
     # x32 route, BigInt
     $h = Math::BigInt->new($h);
     $h->blsft(32)->badd($l);
-    
+
     return $h->bstr;
 }
 
 # portably unpack 64 signed bits, network order to numeric
-sub _sphUnpackI64 
+sub _sphUnpackI64
 {
     my $self = shift;
     my $v = shift;
@@ -295,7 +295,7 @@ sub new {
 	_error		=> '',
 	_warning	=> '',
 	_connerror      => '',
-	
+
 	# request storage (for multi-query case)
 	_reqs           => [],
 	_timeout        => 0,
@@ -305,7 +305,7 @@ sub new {
     };
     bless $self, ref($class) || $class;
 
-    # These options are supported in the constructor, but not recommended 
+    # These options are supported in the constructor, but not recommended
     # since there is no validation.  Use the Set* methods instead.
     my %legal_opts = map { $_ => 1 } qw/host port offset limit mode weights sort sortby groupby groupbyfunc maxmatches cutoff retrycount retrydelay log debug string_encoder string_decoder/;
     for my $opt (keys %$options) {
@@ -363,7 +363,7 @@ sub GetLastWarning {
 }
 
 
-=head2 IsConnectError 
+=head2 IsConnectError
 
 Check connection error flag (to differentiate between network connection errors
 and bad responses).  Returns true value on connection error.
@@ -399,10 +399,10 @@ The coders default to encode_utf8 and decode_utf8 respectively, which
 are compatible with the 'utf8' charset_type.
 
 If either the encoder or decoder functions are left undefined in the
-call to SetEncoders, they return to their default values.  
+call to SetEncoders, they return to their default values.
 
 If you wish to send raw values (no encoding/decoding), supply a
-function that simply returns its argument, e.g. 
+function that simply returns its argument, e.g.
 
     $sph->SetEncoders( sub { shift }, sub { shift });
 
@@ -417,7 +417,7 @@ sub SetEncoders {
 
     $self->{_string_encoder} = $encoder ? $encoder : \&encode_utf8;
     $self->{_string_decoder} = $decoder ? $decoder : \&decode_utf8;
-	
+
     return $self;
 }
 
@@ -445,7 +445,7 @@ sub SetServer {
     croak("host is not defined") unless defined($host);
     $self->{_path} = $host, return if substr($host, 0, 1) eq '/';
     $self->{_path} = substr($host, 7), return if substr($host, 0, 7) eq 'unix://';
-	
+
     croak("port is not an integer") unless defined($port) && $port =~ m/^\d+$/o;
 
     $self->{_host} = $host;
@@ -492,7 +492,7 @@ sub _Send {
 
 sub _Connect {
 	my $self = shift;
-	
+
 	return $self->{_socket} if $self->{_socket};
 
 	my $debug = $self->{_debug};
@@ -578,7 +578,7 @@ sub _GetResponse {
 
 	# check response
         if ( length($response) != $len ) {
-		$self->_Error( $len 
+		$self->_Error( $len
 			? "failed to read searchd response (status=$status, ver=$ver, len=$len, read=". length($response) . ", last error=$lasterror)"
        			: "received zero-sized searchd response");
 		return 0;
@@ -671,19 +671,19 @@ Set match mode, which may be one of:
 
 Match all words
 
-=item * SPH_MATCH_ANY		
+=item * SPH_MATCH_ANY
 
 Match any words
 
-=item * SPH_MATCH_PHRASE	
+=item * SPH_MATCH_PHRASE
 
 Exact phrase match
 
-=item * SPH_MATCH_BOOLEAN	
+=item * SPH_MATCH_BOOLEAN
 
 Boolean match, using AND (&), OR (|), NOT (!,-) and parenthetic grouping.
 
-=item * SPH_MATCH_EXTENDED	
+=item * SPH_MATCH_EXTENDED
 
 Extended match, which includes the Boolean syntax plus field, phrase and
 proximity operators.
@@ -698,12 +698,12 @@ sub SetMatchMode {
         my $self = shift;
         my $mode = shift;
         croak("Match mode not defined") unless defined($mode);
-        croak("Unknown matchmode: $mode") unless ( $mode==SPH_MATCH_ALL 
-						   || $mode==SPH_MATCH_ANY 
-						   || $mode==SPH_MATCH_PHRASE 
-						   || $mode==SPH_MATCH_BOOLEAN 
-						   || $mode==SPH_MATCH_EXTENDED 
-						   || $mode==SPH_MATCH_FULLSCAN 
+        croak("Unknown matchmode: $mode") unless ( $mode==SPH_MATCH_ALL
+						   || $mode==SPH_MATCH_ANY
+						   || $mode==SPH_MATCH_PHRASE
+						   || $mode==SPH_MATCH_BOOLEAN
+						   || $mode==SPH_MATCH_EXTENDED
+						   || $mode==SPH_MATCH_FULLSCAN
 						   || $mode==SPH_MATCH_EXTENDED2 );
         $self->{_mode} = $mode;
 	return $self;
@@ -718,19 +718,19 @@ Set ranking mode, which may be one of:
 
 =over 4
 
-=item * SPH_RANK_PROXIMITY_BM25 
+=item * SPH_RANK_PROXIMITY_BM25
 
 Default mode, phrase proximity major factor and BM25 minor one
 
-=item * SPH_RANK_BM25 
+=item * SPH_RANK_BM25
 
 Statistical mode, BM25 ranking only (faster but worse quality)
 
-=item * SPH_RANK_NONE 
+=item * SPH_RANK_NONE
 
 No ranking, all matches get a weight of 1
 
-=item * SPH_RANK_WORDCOUNT 
+=item * SPH_RANK_WORDCOUNT
 
 Simple word-count weighting, rank is a weighted sum of per-field keyword
 occurence counts
@@ -754,7 +754,7 @@ sub SetRankingMode {
     $self->{_ranker} = $ranker;
     return $self;
 }
-   
+
 
 =head2 SetSortMode
 
@@ -796,7 +796,7 @@ sub SetSortMode {
         croak("Sort mode not defined") unless defined($mode);
         croak("Unknown sort mode: $mode") unless ( $mode == SPH_SORT_RELEVANCE
 						   || $mode == SPH_SORT_ATTR_DESC
-						   || $mode == SPH_SORT_ATTR_ASC 
+						   || $mode == SPH_SORT_ATTR_ASC
 						   || $mode == SPH_SORT_TIME_SEGMENTS
 						   || $mode == SPH_SORT_EXTENDED
 						   || $mode == SPH_SORT_EXPR
@@ -808,7 +808,7 @@ sub SetSortMode {
 }
 
 =head2 SetWeights
-    
+
     $sph->SetWeights([ 1, 2, 3, 4]);
 
 This method is deprecated.  Use L<SetFieldWeights> instead.
@@ -832,7 +832,7 @@ sub SetWeights {
 }
 
 =head2 SetFieldWeights
-    
+
     $sph->SetFieldWeights(\%weights);
 
 Set per-field (integer) weights by field name.  The weights hash provides field
@@ -858,7 +858,7 @@ sub SetFieldWeights {
 }
 
 =head2 SetIndexWeights
-    
+
     $sph->SetIndexWeights(\%weights);
 
 Set per-index (integer) weights.  The weights hash is a mapping of index name to integer weight.
@@ -973,7 +973,7 @@ sub SetFilterRange {
     return $self;
 }
 
-=head2 SetFilterFloatRange 
+=head2 SetFilterFloatRange
 
     $sph->SetFilterFloatRange($attr, $min, $max, $exclude);
 
@@ -1033,9 +1033,9 @@ sub SetGeoAnchor {
     croak("lat: $lat is not numeric") unless ($lat =~ m/$num_re/);
     croak("long: $long is not numeric") unless ($long =~ m/$num_re/);
 
-    $self->{_anchor} = { 
-			 attrlat => $attrlat, 
-			 attrlong => $attrlong, 
+    $self->{_anchor} = {
+			 attrlat => $attrlat,
+			 attrlong => $attrlong,
 			 lat => $lat,
 			 long => $long,
 		     };
@@ -1114,7 +1114,7 @@ over the whole index.
 WARNING: grouping is done in fixed memory and thus its results
 are only approximate; so there might be more groups reported
 in total_found than actually present. @count might also
-be underestimated. 
+be underestimated.
 
 For example, if sorting by relevance and grouping by a "published"
 attribute with SPH_GROUPBY_DAY function, then the result set will
@@ -1205,12 +1205,12 @@ sub SetOverride {
 					 type => $attrtype,
 					 values => $values,
 				     };
-    
+
     return $self;
 }
 
 
-=head2 SetSelect 
+=head2 SetSelect
 
     $sph->SetSelect($select)
 
@@ -1294,23 +1294,23 @@ Returns hash which has the following keys on success:
 =over 4
 
 =item matches
-    
+
 Array containing hashes with found documents ( "doc", "weight", "group", "stamp" )
- 
+
 =item total
 
 Total amount of matches retrieved (upto SPH_MAX_MATCHES, see sphinx.h)
 
 =item total_found
-                    
+
 Total amount of matching documents in index
- 
+
 =item time
-          
+
 Search time
 
 =item words
-           
+
 Hash which maps query terms (stemmed!) to ( "docs", "hits" ) hash
 
 =back
@@ -1381,7 +1381,7 @@ sub AddQuery {
     $req .= pack ( "N/a*", $self->{_string_encoder}->($query) ); # query itself
     $req .= pack ( "N*", scalar(@{$self->{_weights}}), @{$self->{_weights}});
     $req .= pack ( "N/a*", $index); # indexes
-    $req .= pack ( "N", 1) 
+    $req .= pack ( "N", 1)
 	. $self->_sphPackU64($self->{_min_id})
 	. $self->_sphPackU64($self->{_max_id}); # id64 range
 
@@ -1394,18 +1394,15 @@ sub AddQuery {
 	my $t = $filter->{type};
 	if ($t == SPH_FILTER_VALUES) {
 	    $req .= $self->_sphPackI64array($filter->{values});
-	}
-	elsif ($t == SPH_FILTER_RANGE) {
+	} elsif ($t == SPH_FILTER_RANGE) {
 	    $req .= $self->_sphPackI64($filter->{min}) . $self->_sphPackI64($filter->{max});
-	}
-	elsif ($t == SPH_FILTER_FLOATRANGE) {
+	} elsif ($t == SPH_FILTER_FLOATRANGE) {
 	    $req .= _PackFloat ( $filter->{"min"} ) . _PackFloat ( $filter->{"max"} );
-	}
-	else {
+	} else {
 	    croak("Unhandled filter type $t");
 	}
 	$req .= pack ( "N",  $filter->{exclude});
-    }
+}
 
     # group-by clause, max-matches count, group-sort clause, cutoff count
     $req .= pack ( "NN/a*", $self->{_groupfunc}, $self->{_groupby} );
@@ -1415,14 +1412,13 @@ sub AddQuery {
     $req .= pack ( "N/a*", $self->{_groupdistinct});
 
     if (!defined $self->{_anchor}) {
-	$req .= pack ( "N", 0);
-    }
-    else {
-	my $a = $self->{_anchor};
-	$req .= pack ( "N", 1);
-	$req .= pack ( "N/a*", $a->{attrlat});
-	$req .= pack ( "N/a*", $a->{attrlong});
-	$req .= _PackFloat($a->{lat}) . _PackFloat($a->{long});
+        $req .= pack ( "N", 0);
+    } else {
+        my $a = $self->{_anchor};
+        $req .= pack ( "N", 1);
+        $req .= pack ( "N/a*", $a->{attrlat});
+        $req .= pack ( "N/a*", $a->{attrlong});
+        $req .= _PackFloat($a->{lat}) . _PackFloat($a->{long});
     }
 
     # per-index weights
@@ -1441,25 +1437,23 @@ sub AddQuery {
     # attribute overrides
     $req .= pack ( "N", scalar keys %{$self->{_overrides}} );
     for my $entry (values %{$self->{_overrides}}) {
-	$req .= pack ("N/a*", $entry->{attr})
-	    . pack ("NN", $entry->{type}, scalar keys %{$entry->{values}});
-	for my $id (keys %{$entry->{values}}) {
-	    croak "Attribute value key is not numeric" unless $id =~ m/$num_re/;
-	    my $v = $entry->{values}->{$id};
-	    croak "Attribute value key is not numeric" unless $v =~ m/$num_re/;
-	    $req .= $self->_sphPackU64($id);
-	    if ($entry->{type} == SPH_ATTR_FLOAT) {
-		$req .= $self->_packfloat($v);
-	    }
-	    elsif ($entry->{type} == SPH_ATTR_BIGINT) {
-		$req .= $self->_sphPackI64($v);
-	    }
-	    else {
-		$req .= pack("N", $v);
-	    }
-	}
+        $req .= pack ("N/a*", $entry->{attr})
+          . pack ("NN", $entry->{type}, scalar keys %{$entry->{values}});
+        for my $id (keys %{$entry->{values}}) {
+            croak "Attribute value key is not numeric" unless $id =~ m/$num_re/;
+            my $v = $entry->{values}->{$id};
+            croak "Attribute value key is not numeric" unless $v =~ m/$num_re/;
+            $req .= $self->_sphPackU64($id);
+            if ($entry->{type} == SPH_ATTR_FLOAT) {
+                $req .= $self->_packfloat($v);
+            } elsif ($entry->{type} == SPH_ATTR_BIGINT) {
+                $req .= $self->_sphPackI64($v);
+            } else {
+                $req .= pack("N", $v);
+            }
+        }
     }
-    
+
     # select list
     $req .= pack("N/a*", $self->{_select} || '');
 
@@ -1481,14 +1475,14 @@ Returns an array of result sets on success.
 Each result set in the returned array is a hash which contains
 the same keys as the hash returned by L<Query>, plus:
 
-=over 4 
+=over 4
 
-=item * error 
+=item * error
 
 Errors, if any, for this query.
 
 =item * warnings
-	
+
 Any warnings associated with the query.
 
 =back
@@ -1514,7 +1508,7 @@ sub RunQueries {
     $self->_Send($fp, $req);
 
     $self->{_reqs} = [];
-		   
+
     my $response = $self->_GetResponse ( $fp, VER_COMMAND_SEARCH );
     return unless $response;
 
@@ -1544,7 +1538,7 @@ sub RunQueries {
 	    else {
 		$result->{error} = $message;
 		next;
-	    }	    
+	    }
 	}
 
 	# read schema
@@ -1614,9 +1608,9 @@ sub RunQueries {
 	$p += 16;
 
 	while ( $words-->0 && $p < $max) {
-	    my $len = unpack ( "N*", substr ( $response, $p, 4 ) ); 
+	    my $len = unpack ( "N*", substr ( $response, $p, 4 ) );
 	    $p += 4;
-	    my $word = $self->{_string_decoder}->( substr ( $response, $p, $len ) ); 
+	    my $word = $self->{_string_decoder}->( substr ( $response, $p, $len ) );
 	    $p += $len;
 	    my ($docs, $hits) = unpack ("N*N*", substr($response, $p, 8));
 	    $p += 8;
@@ -1638,21 +1632,21 @@ Generate document excerpts for the specified documents.
 
 =over 4
 
-=item docs 
+=item docs
 
 An array reference of strings which represent the document
 contents
 
-=item index 
+=item index
 
 A string specifiying the index whose settings will be used
 for stemming, lexing and case folding
 
-=item words 
+=item words
 
 A string which contains the words to highlight
 
-=item opts 
+=item opts
 
 A hash which contains additional optional highlighting parameters:
 
@@ -1674,7 +1668,7 @@ A hash which contains additional optional highlighting parameters:
 
 =item use_boundaries
 
-=item weight_order 
+=item weight_order
 
 =back
 
@@ -1689,10 +1683,10 @@ Returns an array ref of string excerpts on success.
 sub BuildExcerpts {
 	my ($self, $docs, $index, $words, $opts) = @_;
 	$opts ||= {};
-	croak("BuildExcepts() called with incorrect parameters") 
-	    unless (ref($docs) eq 'ARRAY' 
-		    && defined($index) 
-		    && defined($words) 
+	croak("BuildExcepts() called with incorrect parameters")
+	    unless (ref($docs) eq 'ARRAY'
+		    && defined($index)
+		    && defined($words)
 		    && ref($opts) eq 'HASH');
         my $fp = $self->_Connect() or return;
 
@@ -1745,7 +1739,7 @@ sub BuildExcerpts {
 
 	$req = pack ( "nnN/a*", SEARCHD_COMMAND_EXCERPT, VER_COMMAND_EXCERPT, $req); # add header
 	$self->_Send($fp, $req);
-	
+
 	my $response = $self->_GetResponse($fp, VER_COMMAND_EXCERPT);
 	return unless $response;
 
@@ -1777,19 +1771,19 @@ Returns an array of hashes, where each hash describes a word in the query with t
 
 =over 4
 
-=item * tokenized 
+=item * tokenized
 
 Tokenised term from query
 
-=item * normalized 
+=item * normalized
 
 Normalised term from query
 
-=item * docs 
+=item * docs
 
 Number of docs in which word was found (if $hits is true)
 
-=item * hits 
+=item * hits
 
 Number of occurrences of word (if $hits is true)
 
@@ -1834,11 +1828,11 @@ sub BuildKeywords {
 
 	my $normalized = $len ? $self->{_string_decoder}->( substr ( $response, $p, $len ) ) : ""; $p += $len;
 	my %data = ( tokenized => $tokenized, normalized => $normalized );
-	
+
 	if ($hits) {
 	    ( $data{docs}, $data{hits} ) = unpack("N*N*", substr($response,$p,8));
 	    $p += 8;
-	    
+
 	}
 	push(@res, \%data);
     }
@@ -1873,15 +1867,15 @@ Update specified attributes on specified documents
 
 =over 4
 
-=item index 
+=item index
 
 Name of the index to be updated
 
-=item attrs 
+=item attrs
 
 Array of attribute name strings
 
-=item values 
+=item values
 
 A hash with key as document id, value as an array of new attribute values
 
@@ -1919,7 +1913,7 @@ sub UpdateAttributes  {
 		    croak("array entry value $vv is not an integer") unless ($vv =~ /^(\d+)$/o);
 		}
 	    }
-	    else { 
+	    else {
 		croak("entry value $v is not an integer") unless ($v =~ /^(\d+)$/o);
 	    }
 	}
@@ -1970,7 +1964,7 @@ sub UpdateAttributes  {
 
     $sph->Open()
 
-Opens a persistent connection for subsequent queries.  
+Opens a persistent connection for subsequent queries.
 
 To reduce the network connection overhead of making Sphinx queries, you can call
 $sph->Open(), then run any number of queries, and call $sph->Close() when
@@ -1978,7 +1972,7 @@ finished.
 
 Returns 1 on success, 0 on failure.
 
-=cut 
+=cut
 
 sub Open {
     my $self = shift;
@@ -2004,7 +1998,7 @@ Closes a persistent connection.
 
 Returns 1 on success, 0 on failure.
 
-=cut 
+=cut
 
 sub Close {
     my $self = shift;
@@ -2013,7 +2007,7 @@ sub Close {
 	$self->_Error("not connected");
 	return 0;
     }
-    
+
     close($self->{_socket});
     $self->{_socket} = undef;
 
@@ -2024,18 +2018,18 @@ sub Close {
 
     $status = $sph->Status()
 
-Queries searchd status, and returns a hash of status variable name and value pairs. 
+Queries searchd status, and returns a hash of status variable name and value pairs.
 
 Returns undef on failure.
 
 =cut
 
 sub Status {
-    
+
     my $self = shift;
 
     my $fp = $self->_Connect() or return;
-   
+
     my $req = pack("nnNN", SEARCHD_COMMAND_STATUS, VER_COMMAND_STATUS, 4, 1 ); # len=4, body=1
     $self->_Send($fp, $req) or return;
     my $response = $self->_GetResponse ( $fp, VER_COMMAND_STATUS );
@@ -2062,7 +2056,7 @@ sub Status {
     }
     return \%res;
 }
-    
+
 
 =head1 SEE ALSO
 

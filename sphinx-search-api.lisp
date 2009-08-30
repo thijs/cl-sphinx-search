@@ -97,7 +97,7 @@
    (cutoff
     :accessor cutoff
     :initarg :cutoff
-    :initform ()
+    :initform 0
     :documentation "cutoff to stop searching at")
    (retry-count
     :accessor retry-count
@@ -117,7 +117,7 @@
    (index-weights
     :accessor index-weights
     :initarg :index-weights
-    :initform ()
+    :initform (make-hash-table)
     :documentation "per-index weights")
    (ranker
     :accessor ranker
@@ -132,12 +132,12 @@
    (field-weights
     :accessor field-weights
     :initarg :field-weights
-    :initform ()
+    :initform (make-hash-table)
     :documentation "per-field-name weights")
    (overrides
     :accessor overrides
     :initarg :overrides
-    :initform ()
+    :initform (make-hash-table)
     :documentation "per-query attribute values overrides")
    (select
     :accessor select
@@ -214,15 +214,15 @@
       (format t "res: ~a~%" res)
       res)))
 
-(defmethod %get-response ((client sphinx-client) &key client-version)
-  (multiple-value-bind (status version len) (unpack "n2N" (read-from (%socket client) 8))
+(defmethod %get-response ((client sphinx-client) &key fp client-version)
+  (multiple-value-bind (status version len) (unpack "n2N" (read-from fp 8))
     (format t "~a : ~a : ~a~%" status version len)
     (let ((response ())
           (left len))
       (loop
          (when (< left 0)
            (return))
-         (let ((chunk (read-from (%socket client) left)))
+         (let ((chunk (read-from fp left)))
            (if (> (length chunk) 0)
                (progn
                  (setf response (concatenate 'vector response chunk))
@@ -264,6 +264,23 @@
     (setf (cutoff client) cutoff)))
 
 
+(defmethod run-queries ((client sphinx-client))
+  (assert (> (length (reqs client)) 0))
+  (let* ((requests (pack "Na*" (length (reqs client)) (reqs client)))
+         (data (pack "nnN/a*" +searchd-command-search+ +ver-command-search+ requests)))
+    (setf (reqs client) ())
+    (let ((fp (%connect client)))
+      (when fp
+        (%send client :fp fp :data data)
+        (let ((response (%get-response client :fp fp :client-version +ver-command-search+)))
+          (format t "~a~%" response))))))
+
+
+(defmethod %send ((client sphinx-client) &key fp data)
+  (format t "Writing to socket ~a~%" fp)
+  (sockets:send-to fp (string-to-octets data :encoding :utf-8)))
+
+
 (defmethod add-query ((client sphinx-client) &key query (index "*") (comment ""))
  (let ((req (concatenate 'string
                           (pack "NNNNN" (offset client) (limit client) (mode client) (ranker client) (sort-mode client))
@@ -273,24 +290,7 @@
                           (pack "N/a*" index)
                           (pack "N" 1) (pack "Q>" (min-id client)) (pack "Q>" (max-id client))
                           (pack "N" (length (filters client)))
-                          (map #'(lambda (filter)
-                                   (concatenate 'string
-                                                (pack "N/a*" (gethash 'attr filter))
-                                                (let ((type (gethash 'type filter)))
-                                                  (concatenate 'string
-                                                               (pack "N" type)
-                                                               (cond ((eql type +sph-filter-values+)
-                                                                      (pack-array-signed-quads (get-hash 'values filter)))
-                                                                     ((eql type +sph-filter-range+)
-                                                                      (concatenate 'string (pack "q>" (get-hash 'min filter))
-                                                                                           (pack "q>" (get-hash 'max filter))))
-                                                                     ((eql type +sph-filter-floatrange+)
-                                                                      (concatenate 'string (pack-float (get-hash 'min filter))
-                                                                                           (pack-float (get-hash 'max filter))))
-                                                                     (t
-                                                                      (error "Unhandled filter type ~S" type)))
-                                                               (pack "N" (get-hash 'exclude filter))))))
-                               (filters client))
+                          (%pack-filters (filters client))
                           (pack "NN/a*" (group-function client) (group-by client))
                           (pack "N" (max-matches client))
                           (pack "N/a*" (group-sort client))
@@ -300,21 +300,83 @@
                                  (concatenate 'string
                                               (pack "N/a*" (first (anchor client)))
                                               (pack "N/a*" (third (anchor client)))
-                                              (pack-float (second (anchor client)))
-                                              (pack-float (last (anchor client)))))
+                                              (%pack-float (second (anchor client)))
+                                              (%pack-float (last (anchor client)))))
                                 (t
                                  (pack "N" 0)))
+                          (%pack-hash (index-weights client))
+                          (pack "N" (max-query-time client))
+                          (%pack-hash (field-weights client))
+                          (pack "N/a*" comment)
+                          (pack "N" (hash-table-count (overrides client)))
+                          (%pack-overrides (overrides client))
+                          (pack "N/a*" (if (select client)
+                                           (select client)
+                                           "")))))
+   (format t "req is: ~a~%" req)
+   (setf (reqs client) (append (reqs client) (list req))))
+ (length (reqs client)))
+
+
+(defun %pack-overrides (overrides)
+  (when (hash-table-p overrides)
+    (maphash #'(lambda (k entry)
+                 (concatenate 'string
+                              (pack "N/a*" (get-hash 'attr entry))
+                              (pack "NN" (get-hash 'type entry) (hash-table-count (get-hash 'values entry)))
+                              (maphash #'(lambda (id v)
+                                           (concatenate 'string
+                                                        (assert (and (numberp id) (numberp v)))
+                                                        (pack "Q>" id)
+                                                        (cond ((eql (get-hash 'type entry) +sph-attr-float+)
+                                                               (%pack-float v))
+                                                              ((eql (get-hash 'type entry) +sph-attr-bigint+)
+                                                               (pack "q>" v))
+                                                              (t
+                                                               (pack "N" v)))))
+                                       (get-hash 'values entry))))
+             overrides)))
+
+(defun %pack-filters (filters)
+  (map 'string #'(lambda (filter)
+                   (when (hash-table-p filter)
+                     (concatenate 'string
+                                  (pack "N/a*" (gethash 'attr filter))
+                                  (let ((type (gethash 'type filter)))
+                                    (concatenate 'string
+                                                 (pack "N" type)
+                                                 (cond ((eql type +sph-filter-values+)
+                                                        (%pack-array-signed-quads (get-hash 'values filter)))
+                                                       ((eql type +sph-filter-range+)
+                                                        (concatenate 'string (pack "q>" (get-hash 'min filter))
+                                                                     (pack "q>" (get-hash 'max filter))))
+                                                       ((eql type +sph-filter-floatrange+)
+                                                        (concatenate 'string (%pack-float (get-hash 'min filter))
+                                                                     (%pack-float (get-hash 'max filter))))
+                                                       (t
+                                                        (error "Unhandled filter type ~S" type)))
+                                                 (pack "N" (get-hash 'exclude filter)))))))
+       filters))
 
 
 
 
-(defun pack-array-signed-quads (values-list)
+(defun %pack-hash (hash-table)
+  (when (hash-table-count hash-table)
+  (concatenate 'string
+               (pack "N" (hash-table-count hash-table))
+               (maphash #'(lambda (k v)
+                            (pack "N/a*N" k v))
+                        hash-table))))
+
+
+(defun %pack-array-signed-quads (values-list)
   (concatenate 'string
                (pack "N" (length values-list))
                (map #'(lambda (value)
                         (pack "q>" value)) values-list)))
 
-(defun pack-float (float-value)
+(defun %pack-float (float-value)
   (pack "N" (unpack "L*" (pack "f" float-value))))
 
 
