@@ -67,14 +67,14 @@ search engine, L<http://www.sphinxsearch.com>.
 
 # Constants to export.
 our @EXPORT = qw(
-		SPH_MATCH_ALL SPH_MATCH_ANY SPH_MATCH_PHRASE SPH_MATCH_BOOLEAN SPH_MATCH_EXTENDED
-		SPH_MATCH_FULLSCAN SPH_MATCH_EXTENDED2
-		SPH_RANK_PROXIMITY_BM25 SPH_RANK_BM25 SPH_RANK_NONE SPH_RANK_WORDCOUNT
-		SPH_SORT_RELEVANCE SPH_SORT_ATTR_DESC SPH_SORT_ATTR_ASC SPH_SORT_TIME_SEGMENTS
-		SPH_SORT_EXTENDED SPH_SORT_EXPR
-		SPH_GROUPBY_DAY SPH_GROUPBY_WEEK SPH_GROUPBY_MONTH SPH_GROUPBY_YEAR SPH_GROUPBY_ATTR
-		SPH_GROUPBY_ATTRPAIR
-		);
+                    SPH_MATCH_ALL SPH_MATCH_ANY SPH_MATCH_PHRASE SPH_MATCH_BOOLEAN SPH_MATCH_EXTENDED
+                    SPH_MATCH_FULLSCAN SPH_MATCH_EXTENDED2
+                    SPH_RANK_PROXIMITY_BM25 SPH_RANK_BM25 SPH_RANK_NONE SPH_RANK_WORDCOUNT
+                    SPH_SORT_RELEVANCE SPH_SORT_ATTR_DESC SPH_SORT_ATTR_ASC SPH_SORT_TIME_SEGMENTS
+                    SPH_SORT_EXTENDED SPH_SORT_EXPR
+                    SPH_GROUPBY_DAY SPH_GROUPBY_WEEK SPH_GROUPBY_MONTH SPH_GROUPBY_YEAR SPH_GROUPBY_ATTR
+                    SPH_GROUPBY_ATTRPAIR
+               );
 
 # known searchd commands
 use constant SEARCHD_COMMAND_SEARCH	=> 0;
@@ -177,50 +177,50 @@ sub _sphPackI64array {
 
 # portably unpack 64 unsigned bits, network order to numeric
 sub _sphUnpackU64
-{
-    my $self = shift;
-    my $v = shift;
+  {
+      my $self = shift;
+      my $v = shift;
 
-    my ($h,$l) = unpack ( "N*N*", $v );
+      my ($h,$l) = unpack ( "N*N*", $v );
 
-    # x64 route
-    return ($h<<32) + $l if $is_native64;
+      # x64 route
+      return ($h<<32) + $l if $is_native64;
 
-    # x32 route, BigInt
-    $h = Math::BigInt->new($h);
-    $h->blsft(32)->badd($l);
+      # x32 route, BigInt
+      $h = Math::BigInt->new($h);
+      $h->blsft(32)->badd($l);
 
-    return $h->bstr;
-}
+      return $h->bstr;
+  }
 
 # portably unpack 64 signed bits, network order to numeric
 sub _sphUnpackI64
-{
-    my $self = shift;
-    my $v = shift;
+  {
+      my $self = shift;
+      my $v = shift;
 
-    my ($h,$l) = unpack ( "N*N*", $v );
+      my ($h,$l) = unpack ( "N*N*", $v );
 
-    my $neg = ($h & 0x80000000) ? 1 : 0;
+      my $neg = ($h & 0x80000000) ? 1 : 0;
 
-    # x64 route
-    if ( $is_native64 ) {
-	return -(~(($h<<32) + $l) + 1) if $neg;
-	return ($h<<32) + $l;
-    }
+      # x64 route
+      if ( $is_native64 ) {
+          return -(~(($h<<32) + $l) + 1) if $neg;
+          return ($h<<32) + $l;
+      }
 
-    # x32 route, BigInt
-    if ($neg) {
-	$h = ~$h;
-	$l = ~$l;
-    }
+      # x32 route, BigInt
+      if ($neg) {
+          $h = ~$h;
+          $l = ~$l;
+      }
 
-    my $x = Math::BigInt->new($h);
-    $x->blsft(32)->badd($l);
-    $x->binc()->bneg() if $neg;
+      my $x = Math::BigInt->new($h);
+      $x->blsft(32)->badd($l);
+      $x->binc()->bneg() if $neg;
 
-    return $x->bstr;
-}
+      return $x->bstr;
+  }
 
 
 
@@ -259,57 +259,57 @@ will be generated.
 sub new {
     my ($class, $options) = @_;
     my $self = {
-	# per=client-object settings
-	_host		=> 'localhost',
-	_port		=> 3312,
-	_path           => undef,
-	_socket         => undef,
+                # per=client-object settings
+                _host		=> 'localhost',
+                _port		=> 3312,
+                _path           => undef,
+                _socket         => undef,
 
-	# per-query settings
-	_offset		=> 0,
-	_limit		=> 20,
-	_mode		=> SPH_MATCH_ALL,
-	_weights	=> [],
-	_sort		=> SPH_SORT_RELEVANCE,
-	_sortby		=> "",
-	_min_id		=> 0,
-	_max_id		=> 0,
-	_filters	=> [],
-	_groupby	=> "",
-	_groupdistinct	=> "",
-	_groupfunc	=> SPH_GROUPBY_DAY,
-	_groupsort      => '@group desc',
-	_maxmatches	=> 1000,
-	_cutoff         => 0,
-	_retrycount     => 0,
-	_retrydelay     => 0,
-	_anchor         => undef,
-	_indexweights   => undef,
-	_ranker         => SPH_RANK_PROXIMITY_BM25,
-	_maxquerytime   => 0,
-	_fieldweights   => {},
-	_overrides      => {},
-	_select         => q{*},
+                # per-query settings
+                _offset		=> 0,
+                _limit		=> 20,
+                _mode		=> SPH_MATCH_ALL,
+                _weights	=> [],
+                _sort		=> SPH_SORT_RELEVANCE,
+                _sortby		=> "",
+                _min_id		=> 0,
+                _max_id		=> 0,
+                _filters	=> [],
+                _groupby	=> "",
+                _groupdistinct	=> "",
+                _groupfunc	=> SPH_GROUPBY_DAY,
+                _groupsort      => '@group desc',
+                _maxmatches	=> 1000,
+                _cutoff         => 0,
+                _retrycount     => 0,
+                _retrydelay     => 0,
+                _anchor         => undef,
+                _indexweights   => undef,
+                _ranker         => SPH_RANK_PROXIMITY_BM25,
+                _maxquerytime   => 0,
+                _fieldweights   => {},
+                _overrides      => {},
+                _select         => q{*},
 
-	# per-reply fields (for single-query case)
-	_error		=> '',
-	_warning	=> '',
-	_connerror      => '',
+                # per-reply fields (for single-query case)
+                _error		=> '',
+                _warning	=> '',
+                _connerror      => '',
 
-	# request storage (for multi-query case)
-	_reqs           => [],
-	_timeout        => 0,
+                # request storage (for multi-query case)
+                _reqs           => [],
+                _timeout        => 0,
 
-	_string_encoder => \&encode_utf8,
-	_string_decoder => \&decode_utf8,
-    };
+                _string_encoder => \&encode_utf8,
+                _string_decoder => \&decode_utf8,
+               };
     bless $self, ref($class) || $class;
 
     # These options are supported in the constructor, but not recommended
     # since there is no validation.  Use the Set* methods instead.
     my %legal_opts = map { $_ => 1 } qw/host port offset limit mode weights sort sortby groupby groupbyfunc maxmatches cutoff retrycount retrydelay log debug string_encoder string_decoder/;
     for my $opt (keys %$options) {
-	$self->{'_' . $opt} = $options->{$opt} if $legal_opts{$opt};
+        $self->{'_' . $opt} = $options->{$opt} if $legal_opts{$opt};
     }
     # Disable debug unless we have something to log to
     $self->{_debug} = 0 unless $self->{_log};
@@ -481,9 +481,9 @@ sub _Send {
     $self->{_log}->debug("Writing to socket") if $self->{_debug};
     $fp->write($data); return 1;
     if ($fp->eof || ! $fp->write($data)) {
-	$self->_Error("connection unexpectedly closed (timed out?): $!");
-	$self->{_connerror} = 1;
-	return 0;
+        $self->_Error("connection unexpectedly closed (timed out?): $!");
+        $self->{_connerror} = 1;
+        return 0;
     }
     return 1;
 }
@@ -503,19 +503,18 @@ sub _Connect {
 	$self->{_connerror} = q{};
 
 	my $fp;
-	my %params = (); # ( Blocking => 0 );
+	my %params = ();            # ( Blocking => 0 );
 	$params{Timeout} = $self->{_timeout} if $self->{_timeout};
 	if ($self->{_path}) {
 	    $fp = IO::Socket::UNIX->new( Peer => $self->{_path},
-					 %params,
-					 );
-	}
-	else {
+                                     %params,
+                                   );
+	} else {
 	    $fp = IO::Socket::INET->new( PeerPort => $self->{_port},
-					 PeerAddr => $self->{_host},
-					 Proto => 'tcp',
-					 %params,
-					 );
+                                     PeerAddr => $self->{_host},
+                                     Proto => 'tcp',
+                                     %params,
+                                   );
 	}
 	if (! $fp) {
 	    $self->_Error("Failed to open connection to $str_dest: $!");
@@ -565,7 +564,7 @@ sub _GetResponse {
 	};
 
 	my ($status, $ver, $len ) = unpack("n2N", $header);
-        my $response = q{};
+    my $response = q{};
 	my $lasterror = q{};
 	my $lentotal = 0;
 	while (my $rlen = $fp->read(my $chunk, $len)) {
@@ -574,41 +573,41 @@ sub _GetResponse {
 	    $lentotal += $rlen;
 	    last if $lentotal >= $len;
 	}
-        close($fp) unless $self->{_socket};
+    close($fp) unless $self->{_socket};
 
 	# check response
-        if ( length($response) != $len ) {
+    if ( length($response) != $len ) {
 		$self->_Error( $len
-			? "failed to read searchd response (status=$status, ver=$ver, len=$len, read=". length($response) . ", last error=$lasterror)"
-       			: "received zero-sized searchd response");
+                       ? "failed to read searchd response (status=$status, ver=$ver, len=$len, read=". length($response) . ", last error=$lasterror)"
+                       : "received zero-sized searchd response");
 		return 0;
 	}
 
 	# check status
-        if ( $status==SEARCHD_WARNING ) {
+    if ( $status==SEARCHD_WARNING ) {
 	    my ($wlen) = unpack ( "N*", substr ( $response, 0, 4 ) );
 	    $self->_Warning(substr ( $response, 4, $wlen ));
 	    return substr ( $response, 4+$wlen );
 	}
-        if ( $status==SEARCHD_ERROR ) {
+    if ( $status==SEARCHD_ERROR ) {
 		$self->_Error("searchd error: " . substr ( $response, 4 ));
 		return 0;
 	}
 	if ( $status==SEARCHD_RETRY ) {
 		$self->_Error("temporary searchd error: " . substr ( $response, 4 ));
-                return 0;
-        }
-        if ( $status!=SEARCHD_OK ) {
-        	$self->_Error("unknown status code '$status'");
-        	return 0;
+        return 0;
+    }
+    if ( $status!=SEARCHD_OK ) {
+        $self->_Error("unknown status code '$status'");
+        return 0;
 	}
 
 	# check version
-        if ( $ver<$client_ver ) {
+    if ( $ver<$client_ver ) {
 	    $self->_Warning(sprintf ( "searchd command v.%d.%d older than client's v.%d.%d, some options might not work",
-				      $ver>>8, $ver&0xff, $client_ver>>8, $client_ver&0xff ));
+                                  $ver>>8, $ver&0xff, $client_ver>>8, $client_ver&0xff ));
 	}
-        return $response;
+    return $response;
 }
 
 =head2 SetLimits
@@ -631,8 +630,8 @@ sub SetLimits {
     croak("limit should be an integer >= 0") unless ($limit =~ /^\d+$/ && $limit >= 0);
     $self->{_offset} = $offset;
     $self->{_limit}  = $limit;
-    if($max > 0) {
-	$self->{_maxmatches} = $max;
+    if ($max > 0) {
+        $self->{_maxmatches} = $max;
     }
     return $self;
 }
@@ -695,17 +694,17 @@ Returns $sph.
 =cut
 
 sub SetMatchMode {
-        my $self = shift;
-        my $mode = shift;
-        croak("Match mode not defined") unless defined($mode);
-        croak("Unknown matchmode: $mode") unless ( $mode==SPH_MATCH_ALL
-						   || $mode==SPH_MATCH_ANY
-						   || $mode==SPH_MATCH_PHRASE
-						   || $mode==SPH_MATCH_BOOLEAN
-						   || $mode==SPH_MATCH_EXTENDED
-						   || $mode==SPH_MATCH_FULLSCAN
-						   || $mode==SPH_MATCH_EXTENDED2 );
-        $self->{_mode} = $mode;
+    my $self = shift;
+    my $mode = shift;
+    croak("Match mode not defined") unless defined($mode);
+    croak("Unknown matchmode: $mode") unless ( $mode==SPH_MATCH_ALL
+                                               || $mode==SPH_MATCH_ANY
+                                               || $mode==SPH_MATCH_PHRASE
+                                               || $mode==SPH_MATCH_BOOLEAN
+                                               || $mode==SPH_MATCH_EXTENDED
+                                               || $mode==SPH_MATCH_FULLSCAN
+                                               || $mode==SPH_MATCH_EXTENDED2 );
+    $self->{_mode} = $mode;
 	return $self;
 }
 
@@ -746,10 +745,10 @@ sub SetRankingMode {
     my $ranker = shift;
 
     croak("Unknown ranking mode: $ranker") unless ( $ranker==SPH_RANK_PROXIMITY_BM25
-						    || $ranker==SPH_RANK_BM25
-						    || $ranker==SPH_RANK_NONE
-						    || $ranker==SPH_RANK_WORDCOUNT
-						    || $ranker==SPH_RANK_PROXIMITY );
+                                                    || $ranker==SPH_RANK_BM25
+                                                    || $ranker==SPH_RANK_NONE
+                                                    || $ranker==SPH_RANK_WORDCOUNT
+                                                    || $ranker==SPH_RANK_PROXIMITY );
 
     $self->{_ranker} = $ranker;
     return $self;
@@ -790,19 +789,19 @@ Returns $sph.
 =cut
 
 sub SetSortMode {
-        my $self = shift;
-        my $mode = shift;
+    my $self = shift;
+    my $mode = shift;
 	my $sortby = shift || "";
-        croak("Sort mode not defined") unless defined($mode);
-        croak("Unknown sort mode: $mode") unless ( $mode == SPH_SORT_RELEVANCE
-						   || $mode == SPH_SORT_ATTR_DESC
-						   || $mode == SPH_SORT_ATTR_ASC
-						   || $mode == SPH_SORT_TIME_SEGMENTS
-						   || $mode == SPH_SORT_EXTENDED
-						   || $mode == SPH_SORT_EXPR
-						   );
+    croak("Sort mode not defined") unless defined($mode);
+    croak("Unknown sort mode: $mode") unless ( $mode == SPH_SORT_RELEVANCE
+                                               || $mode == SPH_SORT_ATTR_DESC
+                                               || $mode == SPH_SORT_ATTR_ASC
+                                               || $mode == SPH_SORT_TIME_SEGMENTS
+                                               || $mode == SPH_SORT_EXTENDED
+                                               || $mode == SPH_SORT_EXPR
+                                             );
 	croak("Sortby must be defined") unless ($mode==SPH_SORT_RELEVANCE || length($sortby));
-        $self->{_sort} = $mode;
+    $self->{_sort} = $mode;
 	$self->{_sortby} = $sortby;
 	return $self;
 }
@@ -821,13 +820,13 @@ Returns $sph.
 =cut
 
 sub SetWeights {
-        my $self = shift;
-        my $weights = shift;
-        croak("Weights is not an array reference") unless (ref($weights) eq 'ARRAY');
-        foreach my $weight (@$weights) {
-                croak("Weight: $weight is not an integer") unless ($weight =~ /^\d+$/);
-        }
-        $self->{_weights} = $weights;
+    my $self = shift;
+    my $weights = shift;
+    croak("Weights is not an array reference") unless (ref($weights) eq 'ARRAY');
+    foreach my $weight (@$weights) {
+        croak("Weight: $weight is not an integer") unless ($weight =~ /^\d+$/);
+    }
+    $self->{_weights} = $weights;
 	return $self;
 }
 
@@ -847,13 +846,13 @@ Returns $sph.
 =cut
 
 sub SetFieldWeights {
-        my $self = shift;
-        my $weights = shift;
-        croak("Weights is not a hash reference") unless (ref($weights) eq 'HASH');
-        foreach my $field (keys %$weights) {
+    my $self = shift;
+    my $weights = shift;
+    croak("Weights is not a hash reference") unless (ref($weights) eq 'HASH');
+    foreach my $field (keys %$weights) {
 	    croak("Weight: $weights->{$field} is not an integer >= 0") unless ($weights->{$field} =~ /^\d+$/);
-        }
-        $self->{_fieldweights} = $weights;
+    }
+    $self->{_fieldweights} = $weights;
 	return $self;
 }
 
@@ -868,13 +867,13 @@ Returns $sph.
 =cut
 
 sub SetIndexWeights {
-        my $self = shift;
-        my $weights = shift;
-        croak("Weights is not a hash reference") unless (ref($weights) eq 'HASH');
-        foreach (keys %$weights) {
-                croak("IndexWeight $_: $weights->{$_} is not an integer") unless ($weights->{$_} =~ /^\d+$/);
-        }
-        $self->{_indexweights} = $weights;
+    my $self = shift;
+    my $weights = shift;
+    croak("Weights is not a hash reference") unless (ref($weights) eq 'HASH');
+    foreach (keys %$weights) {
+        croak("IndexWeight $_: $weights->{$_} is not an integer") unless ($weights->{$_} =~ /^\d+$/);
+    }
+    $self->{_indexweights} = $weights;
 	return $self;
 }
 
@@ -928,14 +927,14 @@ sub SetFilter {
     croak("values reference is empty") unless (scalar(@$values));
 
     foreach my $value (@$values) {
-	croak("value $value is not numeric") unless ($value =~ m/$num_re/);
+        croak("value $value is not numeric") unless ($value =~ m/$num_re/);
     }
     push(@{$self->{_filters}}, {
-	type => SPH_FILTER_VALUES,
-	attr => $attribute,
-	values => $values,
-	exclude => $exclude ? 1 : 0,
-    });
+                                type => SPH_FILTER_VALUES,
+                                attr => $attribute,
+                                values => $values,
+                                exclude => $exclude ? 1 : 0,
+                               });
 
     return $self;
 }
@@ -963,12 +962,12 @@ sub SetFilterRange {
     croak("min value should be <= max") unless ($min <= $max);
 
     push(@{$self->{_filters}}, {
-	type => SPH_FILTER_RANGE,
-	attr => $attribute,
-	min => $min,
-	max => $max,
-	exclude => $exclude ? 1 : 0,
-    });
+                                type => SPH_FILTER_RANGE,
+                                attr => $attribute,
+                                min => $min,
+                                max => $max,
+                                exclude => $exclude ? 1 : 0,
+                               });
 
     return $self;
 }
@@ -991,12 +990,12 @@ sub SetFilterFloatRange {
     croak("min value should be <= max") unless ($min <= $max);
 
     push(@{$self->{_filters}}, {
-	type => SPH_FILTER_FLOATRANGE,
-	attr => $attribute,
-	min => $min,
-	max => $max,
-	exclude => $exclude ? 1 : 0,
-    });
+                                type => SPH_FILTER_FLOATRANGE,
+                                attr => $attribute,
+                                min => $min,
+                                max => $max,
+                                exclude => $exclude ? 1 : 0,
+                               });
 
     return $self;
 
@@ -1034,11 +1033,11 @@ sub SetGeoAnchor {
     croak("long: $long is not numeric") unless ($long =~ m/$num_re/);
 
     $self->{_anchor} = {
-			 attrlat => $attrlat,
-			 attrlong => $attrlong,
-			 lat => $lat,
-			 long => $long,
-		     };
+                        attrlat => $attrlat,
+                        attrlong => $attrlong,
+                        lat => $lat,
+                        long => $long,
+                       };
     return $self;
 }
 
@@ -1131,12 +1130,12 @@ sub SetGroupBy {
 	my $groupsort = shift || '@group desc';
 	croak("attribute is not defined") unless (defined $attribute);
 	croak("Unknown grouping function: $func") unless ($func==SPH_GROUPBY_DAY
-							  || $func==SPH_GROUPBY_WEEK
-							  || $func==SPH_GROUPBY_MONTH
-							  || $func==SPH_GROUPBY_YEAR
-							  || $func==SPH_GROUPBY_ATTR
-							  || $func==SPH_GROUPBY_ATTRPAIR
-							  );
+                                                      || $func==SPH_GROUPBY_WEEK
+                                                      || $func==SPH_GROUPBY_MONTH
+                                                      || $func==SPH_GROUPBY_YEAR
+                                                      || $func==SPH_GROUPBY_ATTR
+                                                      || $func==SPH_GROUPBY_ATTRPAIR
+                                                     );
 
 	$self->{_groupby} = $attribute;
 	$self->{_groupfunc} = $func;
@@ -1197,14 +1196,14 @@ sub SetOverride {
 
     croak("attribute name is not defined") unless defined $attrname;
     croak("Uknown attribute type: $attrtype") unless ($attrtype == SPH_ATTR_INTEGER
-						      || $attrtype == SPH_ATTR_TIMESTAMP
-						      || $attrtype == SPH_ATTR_BOOL
-						      || $attrtype == SPH_ATTR_FLOAT
-						      || $attrtype == SPH_ATTR_BIGINT);
+                                                      || $attrtype == SPH_ATTR_TIMESTAMP
+                                                      || $attrtype == SPH_ATTR_BOOL
+                                                      || $attrtype == SPH_ATTR_FLOAT
+                                                      || $attrtype == SPH_ATTR_BIGINT);
     $self->{_overrides}->{$attrname} = { attr => $attrname,
-					 type => $attrtype,
-					 values => $values,
-				     };
+                                         type => $attrtype,
+                                         values => $values,
+                                       };
 
     return $self;
 }
@@ -1339,7 +1338,7 @@ sub Query {
 # helper to pack floats in network byte order
 sub _PackFloat {
     my $f = shift;
-    my $t1 = pack ( "f", $f ); # machine order
+    my $t1 = pack ( "f", $f );     # machine order
     my $t2 = unpack ( "L*", $t1 ); # int in machine order
     return pack ( "N", $t2 );
 }
@@ -1382,27 +1381,27 @@ sub AddQuery {
     $req .= pack ( "N*", scalar(@{$self->{_weights}}), @{$self->{_weights}});
     $req .= pack ( "N/a*", $index); # indexes
     $req .= pack ( "N", 1)
-	. $self->_sphPackU64($self->{_min_id})
-	. $self->_sphPackU64($self->{_max_id}); # id64 range
+      . $self->_sphPackU64($self->{_min_id})
+        . $self->_sphPackU64($self->{_max_id}); # id64 range
 
     # filters
     $req .= pack ( "N", scalar @{$self->{_filters}} );
     foreach my $filter (@{$self->{_filters}}) {
-	$req .= pack ( "N/a*", $filter->{attr});
-	$req .= pack ( "N", $filter->{type});
+        $req .= pack ( "N/a*", $filter->{attr});
+        $req .= pack ( "N", $filter->{type});
 
-	my $t = $filter->{type};
-	if ($t == SPH_FILTER_VALUES) {
-	    $req .= $self->_sphPackI64array($filter->{values});
-	} elsif ($t == SPH_FILTER_RANGE) {
-	    $req .= $self->_sphPackI64($filter->{min}) . $self->_sphPackI64($filter->{max});
-	} elsif ($t == SPH_FILTER_FLOATRANGE) {
-	    $req .= _PackFloat ( $filter->{"min"} ) . _PackFloat ( $filter->{"max"} );
-	} else {
-	    croak("Unhandled filter type $t");
-	}
-	$req .= pack ( "N",  $filter->{exclude});
-}
+        my $t = $filter->{type};
+        if ($t == SPH_FILTER_VALUES) {
+            $req .= $self->_sphPackI64array($filter->{values});
+        } elsif ($t == SPH_FILTER_RANGE) {
+            $req .= $self->_sphPackI64($filter->{min}) . $self->_sphPackI64($filter->{max});
+        } elsif ($t == SPH_FILTER_FLOATRANGE) {
+            $req .= _PackFloat ( $filter->{"min"} ) . _PackFloat ( $filter->{"max"} );
+        } else {
+            croak("Unhandled filter type $t");
+        }
+        $req .= pack ( "N",  $filter->{exclude});
+    }
 
     # group-by clause, max-matches count, group-sort clause, cutoff count
     $req .= pack ( "NN/a*", $self->{_groupfunc}, $self->{_groupby} );
@@ -1493,8 +1492,8 @@ sub RunQueries {
     my $self = shift;
 
     unless (@{$self->{_reqs}}) {
-	$self->_Error("no queries defined, issue AddQuery() first");
-	return;
+        $self->_Error("no queries defined, issue AddQuery() first");
+        return;
     }
 
     my $fp = $self->_Connect() or do { $self->{_reqs} = []; return };
@@ -1521,104 +1520,101 @@ sub RunQueries {
 
     my @results;
     for (my $ires = 0; $ires < $nreqs; $ires++) {
-	my $result = {};	# Empty hash ref
-	push(@results, $result);
-	$result->{matches} = []; # Empty array ref
-	$result->{error} = "";
-	$result->{warnings} = "";
+        my $result = {};        # Empty hash ref
+        push(@results, $result);
+        $result->{matches} = []; # Empty array ref
+        $result->{error} = "";
+        $result->{warnings} = "";
 
-	# extract status
-	my $status = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
-	if ($status != SEARCHD_OK) {
-	    my $len = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
-	    my $message = substr ( $response, $p, $len ); $p += $len;
-	    if ($status == SEARCHD_WARNING) {
-		$result->{warning} = $message;
-	    }
-	    else {
-		$result->{error} = $message;
-		next;
-	    }
-	}
+        # extract status
+        my $status = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
+        if ($status != SEARCHD_OK) {
+            my $len = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
+            my $message = substr ( $response, $p, $len ); $p += $len;
+            if ($status == SEARCHD_WARNING) {
+                $result->{warning} = $message;
+            } else {
+                $result->{error} = $message;
+                next;
+            }
+        }
 
-	# read schema
-	my @fields;
-	my (%attrs, @attr_list);
+        # read schema
+        my @fields;
+        my (%attrs, @attr_list);
 
-	my $nfields = unpack ( "N", substr ( $response, $p, 4 ) ); $p += 4;
-	while ( $nfields-->0 && $p<$max ) {
-	    my $len = unpack ( "N", substr ( $response, $p, 4 ) ); $p += 4;
-	    push(@fields, substr ( $response, $p, $len )); $p += $len;
-	}
-	$result->{"fields"} = \@fields;
+        my $nfields = unpack ( "N", substr ( $response, $p, 4 ) ); $p += 4;
+        while ( $nfields-->0 && $p<$max ) {
+            my $len = unpack ( "N", substr ( $response, $p, 4 ) ); $p += 4;
+            push(@fields, substr ( $response, $p, $len )); $p += $len;
+        }
+        $result->{"fields"} = \@fields;
 
-	my $nattrs = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
-	while ( $nattrs-->0 && $p<$max  ) {
-	    my $len = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
-	    my $attr = substr ( $response, $p, $len ); $p += $len;
-	    my $type = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
-	    $attrs{$attr} = $type;
-	    push(@attr_list, $attr);
-	}
-	$result->{"attrs"} = \%attrs;
+        my $nattrs = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+        while ( $nattrs-->0 && $p<$max  ) {
+            my $len = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+            my $attr = substr ( $response, $p, $len ); $p += $len;
+            my $type = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+            $attrs{$attr} = $type;
+            push(@attr_list, $attr);
+        }
+        $result->{"attrs"} = \%attrs;
 
-	# read match count
-	my $count = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
-	my $id64 = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+        # read match count
+        my $count = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+        my $id64 = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
 
-	# read matches
-	while ( $count-->0 && $p<$max ) {
-	    my $data = {};
-	    if ($id64) {
-		$data->{doc} = $self->_sphUnpackU64(substr($response, $p, 8)); $p += 8;
-		$data->{weight} = unpack("N*", substr($response, $p, 4)); $p += 4;
-	    }
-	    else {
-		( $data->{doc}, $data->{weight} ) = unpack("N*N*", substr($response,$p,8));
-		$p += 8;
-	    }
-	    foreach my $attr (@attr_list) {
-		if ($attrs{$attr} == SPH_ATTR_BIGINT) {
-		    $data->{$attr} = $self->_sphUnpackI64(substr($response, $p, 8)); $p += 8;
-		    next;
-		}
-		if ($attrs{$attr} == SPH_ATTR_FLOAT) {
-		    my $uval = unpack( "N*", substr ( $response, $p, 4 ) ); $p += 4;
-		    $data->{$attr} = [ unpack("f*", pack("L", $uval)) ];
-		    next;
-		}
-		my $val = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
-		if ($attrs{$attr} & SPH_ATTR_MULTI) {
-		    my $nvalues = $val;
-		    $data->{$attr} = [];
-		    while ($nvalues-->0 && $p < $max) {
-			$val = unpack( "N*", substr ( $response, $p, 4 ) ); $p += 4;
-			push(@{$data->{$attr}}, $val);
-		    }
-		}
-		else {
-		    $data->{$attr} = $val;
-		}
-	    }
-	    push(@{$result->{matches}}, $data);
-	}
-	my $words;
-	($result->{total}, $result->{total_found}, $result->{time}, $words) = unpack("N*N*N*N*", substr($response, $p, 16));
-	$result->{time} = sprintf ( "%.3f", $result->{"time"}/1000 );
-	$p += 16;
+        # read matches
+        while ( $count-->0 && $p<$max ) {
+            my $data = {};
+            if ($id64) {
+                $data->{doc} = $self->_sphUnpackU64(substr($response, $p, 8)); $p += 8;
+                $data->{weight} = unpack("N*", substr($response, $p, 4)); $p += 4;
+            } else {
+                ( $data->{doc}, $data->{weight} ) = unpack("N*N*", substr($response,$p,8));
+                $p += 8;
+            }
+            foreach my $attr (@attr_list) {
+                if ($attrs{$attr} == SPH_ATTR_BIGINT) {
+                    $data->{$attr} = $self->_sphUnpackI64(substr($response, $p, 8)); $p += 8;
+                    next;
+                }
+                if ($attrs{$attr} == SPH_ATTR_FLOAT) {
+                    my $uval = unpack( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+                    $data->{$attr} = [ unpack("f*", pack("L", $uval)) ];
+                    next;
+                }
+                my $val = unpack ( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+                if ($attrs{$attr} & SPH_ATTR_MULTI) {
+                    my $nvalues = $val;
+                    $data->{$attr} = [];
+                    while ($nvalues-->0 && $p < $max) {
+                        $val = unpack( "N*", substr ( $response, $p, 4 ) ); $p += 4;
+                        push(@{$data->{$attr}}, $val);
+                    }
+                } else {
+                    $data->{$attr} = $val;
+                }
+            }
+            push(@{$result->{matches}}, $data);
+        }
+        my $words;
+        ($result->{total}, $result->{total_found}, $result->{time}, $words) = unpack("N*N*N*N*", substr($response, $p, 16));
+        $result->{time} = sprintf ( "%.3f", $result->{"time"}/1000 );
+        $p += 16;
 
-	while ( $words-->0 && $p < $max) {
-	    my $len = unpack ( "N*", substr ( $response, $p, 4 ) );
-	    $p += 4;
-	    my $word = $self->{_string_decoder}->( substr ( $response, $p, $len ) );
-	    $p += $len;
-	    my ($docs, $hits) = unpack ("N*N*", substr($response, $p, 8));
-	    $p += 8;
-	    $result->{words}{$word} = {
-		"docs" => $docs,
-		"hits" => $hits
-		};
-	}
+        while ( $words-->0 && $p < $max) {
+            my $len = unpack ( "N*", substr ( $response, $p, 4 ) );
+            $p += 4;
+            my $word = $self->{_string_decoder}->( substr ( $response, $p, $len ) );
+            $p += $len;
+            my ($docs, $hits) = unpack ("N*N*", substr($response, $p, 8));
+            $p += 8;
+            $result->{words}{$word} = {
+                                       "docs" => $docs,
+                                       "hits" => $hits
+                                      };
+        }
     }
 
     return \@results;
@@ -1684,11 +1680,11 @@ sub BuildExcerpts {
 	my ($self, $docs, $index, $words, $opts) = @_;
 	$opts ||= {};
 	croak("BuildExcepts() called with incorrect parameters")
-	    unless (ref($docs) eq 'ARRAY'
-		    && defined($index)
-		    && defined($words)
-		    && ref($opts) eq 'HASH');
-        my $fp = $self->_Connect() or return;
+      unless (ref($docs) eq 'ARRAY'
+              && defined($index)
+              && defined($words)
+              && ref($opts) eq 'HASH');
+    my $fp = $self->_Connect() or return;
 
 	##################
 	# fixup options
@@ -1709,7 +1705,7 @@ sub BuildExcerpts {
 
 	# v.1.0 req
 	my $req;
-	my $flags = 1; # remove spaces
+	my $flags = 1;              # remove spaces
 	$flags |= 2 if ( $opts->{"exact_phrase"} );
 	$flags |= 4 if ( $opts->{"single_passage"} );
 	$flags |= 8 if ( $opts->{"use_boundaries"} );
@@ -1734,7 +1730,7 @@ sub BuildExcerpts {
 	}
 
 	##########################
-        # send query, get response
+    # send query, get response
 	##########################
 
 	$req = pack ( "nnN/a*", SEARCHD_COMMAND_EXCERPT, VER_COMMAND_EXCERPT, $req); # add header
@@ -1744,20 +1740,20 @@ sub BuildExcerpts {
 	return unless $response;
 
 	my ($pos, $i) = 0;
-	my $res = [];	# Empty hash ref
-        my $rlen = length($response);
-        for ( $i=0; $i< scalar(@$docs); $i++ ) {
+	my $res = [];               # Empty hash ref
+    my $rlen = length($response);
+    for ( $i=0; $i< scalar(@$docs); $i++ ) {
 		my $len = unpack ( "N*", substr ( $response, $pos, 4 ) );
 		$pos += 4;
 
-                if ( $pos+$len > $rlen ) {
+        if ( $pos+$len > $rlen ) {
 			$self->_Error("incomplete reply");
 			return;
 		}
 		push(@$res, $self->{_string_decoder}->( substr ( $response, $pos, $len ) ));
 		$pos += $len;
-        }
-        return $res;
+    }
+    return $res;
 }
 
 
@@ -1821,24 +1817,24 @@ sub BuildKeywords {
     my $nwords = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
 
     for (my $i=0; $i < $nwords; $i++ ) {
-	my $len = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
+        my $len = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
 
-	my $tokenized = $len ? $self->{_string_decoder}->( substr ( $response, $p, $len ) ) : ""; $p += $len;
-	$len = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
+        my $tokenized = $len ? $self->{_string_decoder}->( substr ( $response, $p, $len ) ) : ""; $p += $len;
+        $len = unpack("N", substr ( $response, $p, 4 ) ); $p += 4;
 
-	my $normalized = $len ? $self->{_string_decoder}->( substr ( $response, $p, $len ) ) : ""; $p += $len;
-	my %data = ( tokenized => $tokenized, normalized => $normalized );
+        my $normalized = $len ? $self->{_string_decoder}->( substr ( $response, $p, $len ) ) : ""; $p += $len;
+        my %data = ( tokenized => $tokenized, normalized => $normalized );
 
-	if ($hits) {
-	    ( $data{docs}, $data{hits} ) = unpack("N*N*", substr($response,$p,8));
-	    $p += 8;
+        if ($hits) {
+            ( $data{docs}, $data{hits} ) = unpack("N*N*", substr($response,$p,8));
+            $p += 8;
 
-	}
-	push(@res, \%data);
+        }
+        push(@res, \%data);
     }
     if ( $p > $rlen ) {
-	$self->_Error("incomplete reply");
-	return;
+        $self->_Error("incomplete reply");
+        return;
     }
 
     return \@res;
@@ -1897,26 +1893,25 @@ sub UpdateAttributes  {
     croak("index is not defined") unless (defined $index);
     croak("attrs must be an array") unless ref($attrs) eq "ARRAY";
     for my $attr (@$attrs) {
-	croak("attribute is not defined") unless (defined $attr);
+        croak("attribute is not defined") unless (defined $attr);
     }
     croak("values must be a hashref") unless ref($values) eq "HASH";
 
     for my $id (keys %$values) {
-	my $entry = $values->{$id};
-	croak("value id $id is not numeric") unless ($id =~ /$num_re/);
-	croak("value entry must be an array") unless ref($entry) eq "ARRAY";
-	croak("size of values must match size of attrs") unless @$entry == @$attrs;
-	for my $v (@$entry) {
-	    if ($mva) {
-		croak("multi-valued entry $v is not an array") unless ref($v) eq 'ARRAY';
-		for my $vv (@$v) {
-		    croak("array entry value $vv is not an integer") unless ($vv =~ /^(\d+)$/o);
-		}
-	    }
-	    else {
-		croak("entry value $v is not an integer") unless ($v =~ /^(\d+)$/o);
-	    }
-	}
+        my $entry = $values->{$id};
+        croak("value id $id is not numeric") unless ($id =~ /$num_re/);
+        croak("value entry must be an array") unless ref($entry) eq "ARRAY";
+        croak("size of values must match size of attrs") unless @$entry == @$attrs;
+        for my $v (@$entry) {
+            if ($mva) {
+                croak("multi-valued entry $v is not an array") unless ref($v) eq 'ARRAY';
+                for my $vv (@$v) {
+                    croak("array entry value $vv is not an integer") unless ($vv =~ /^(\d+)$/o);
+                }
+            } else {
+                croak("entry value $v is not an integer") unless ($v =~ /^(\d+)$/o);
+            }
+        }
     }
 
     ## build request
@@ -1924,26 +1919,25 @@ sub UpdateAttributes  {
 
     $req .= pack ( "N", scalar @$attrs );
     for my $attr (@$attrs) {
-	$req .= pack ( "N/a*", $attr)
-	    . pack("N", $mva ? 1 : 0);
+        $req .= pack ( "N/a*", $attr)
+          . pack("N", $mva ? 1 : 0);
     }
     $req .= pack ( "N", scalar keys %$values );
     foreach my $id (keys %$values) {
-	my $entry = $values->{$id};
-	$req .= $self->_sphPackU64($id);
-	if ($mva) {
-	    for my $v ( @$entry ) {
-		$req .= pack ( "N", @$v );
-		for my $vv (@$v) {
-		    $req .= pack ("N", $vv);
-		}
-	    }
-	}
-	else {
-	    for my $v ( @$entry ) {
-		$req .= pack ( "N", $v );
-	    }
-	}
+        my $entry = $values->{$id};
+        $req .= $self->_sphPackU64($id);
+        if ($mva) {
+            for my $v ( @$entry ) {
+                $req .= pack ( "N", @$v );
+                for my $vv (@$v) {
+                    $req .= pack ("N", $vv);
+                }
+            }
+        } else {
+            for my $v ( @$entry ) {
+                $req .= pack ( "N", $v );
+            }
+        }
     }
 
     ## connect, send query, get response
@@ -1962,33 +1956,33 @@ sub UpdateAttributes  {
 
 =head2 Open
 
-    $sph->Open()
+  $sph->Open()
 
-Opens a persistent connection for subsequent queries.
+  Opens a persistent connection for subsequent queries.
 
-To reduce the network connection overhead of making Sphinx queries, you can call
-$sph->Open(), then run any number of queries, and call $sph->Close() when
-finished.
+  To reduce the network connection overhead of making Sphinx queries, you can call
+  $sph->Open(), then run any number of queries, and call $sph->Close() when
+  finished.
 
-Returns 1 on success, 0 on failure.
+  Returns 1 on success, 0 on failure.
 
-=cut
+  =cut
 
-sub Open {
-    my $self = shift;
+  sub Open {
+      my $self = shift;
 
-    if ($self->{_socket}) {
-	$self->_Error("already connected");
-	return 0;
-    }
-    my $fp = $self->_Connect() or return 0;
+      if ($self->{_socket}) {
+          $self->_Error("already connected");
+          return 0;
+      }
+      my $fp = $self->_Connect() or return 0;
 
-    my $req = pack("nnNN", SEARCHD_COMMAND_PERSIST, 0, 4, 1);
-    $self->_Send($fp, $req) or return 0;
+      my $req = pack("nnNN", SEARCHD_COMMAND_PERSIST, 0, 4, 1);
+      $self->_Send($fp, $req) or return 0;
 
-    $self->{_socket} = $fp;
-    return 1;
-}
+      $self->{_socket} = $fp;
+      return 1;
+  }
 
 =head2 Close
 
@@ -2004,8 +1998,8 @@ sub Close {
     my $self = shift;
 
     if (! $self->{_socket}) {
-	$self->_Error("not connected");
-	return 0;
+        $self->_Error("not connected");
+        return 0;
     }
 
     close($self->{_socket});
@@ -2041,18 +2035,17 @@ sub Status {
     return {} unless $rows && $cols;
     my %res;
     for (1 .. $rows ) {
-	my @entry;
-	for ( 1 .. $cols) {
-	    my $len = unpack("N*", substr ( $response, $p, 4 ) ); $p += 4;
-	    push(@entry, $len ? substr ( $response, $p, $len ) : ""); $p += $len;
-	}
-	if ($cols <= 2) {
-	    $res{$entry[0]} = $entry[1];
-	}
-	else {
-	    my $name = shift @entry;
-	    $res{$name} = \@entry;
-	}
+        my @entry;
+        for ( 1 .. $cols) {
+            my $len = unpack("N*", substr ( $response, $p, 4 ) ); $p += 4;
+            push(@entry, $len ? substr ( $response, $p, $len ) : ""); $p += $len;
+        }
+        if ($cols <= 2) {
+            $res{$entry[0]} = $entry[1];
+        } else {
+            my $name = shift @entry;
+            $res{$name} = \@entry;
+        }
     }
     return \%res;
 }
@@ -2074,7 +2067,7 @@ compatible with the old Sphinx.pm except:
 
 =item On failure, Sphinx::Search returns undef rather than 0 or -1.
 
-=item Sphinx::Search 'Set' functions are cascadable, e.g. you can do
+=Item Sphinx::Search 'Set' functions are cascadable, e.g. you can do
       Sphinx::Search->new
         ->SetMatchMode(SPH_MATCH_ALL)
         ->SetSortMode(SPH_SORT_RELEVANCE)
