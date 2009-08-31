@@ -62,7 +62,7 @@
    (max-id
     :accessor max-id
     :initarg :max-id
-    :initform ()
+    :initform 0
     :documentation "max ID to match (default is max value for uint on system)")
    (filters
     :accessor filters
@@ -163,7 +163,7 @@
 
 
 (defmethod set-server ((client sphinx-client) &key host port)
-  (format t "~s : ~s" host port)
+  (format t "set-server -> ~s : ~s" host port)
   (assert (stringp host))
   (cond ((string= host "/" :start1 0 :end1 1)
          (setf (%path client) host)
@@ -174,7 +174,7 @@
          (setf (%host client) ())
          (setf (%port client) ()))
         (t
-         (format t "~s : ~s" host port)
+         (format t "set-server -> ~s : ~s" host port)
          (assert (numberp port))
          (setf (%host client) host)
          (setf (%port client) port)
@@ -199,36 +199,40 @@
           (setf (last-error client) "connection to socket failed"))
         (progn
           (sockets:send-to (%socket client)
-                           (string-to-octets (pack "N" 1) :encoding :utf-8))
-          (format t "~a~%" v)
+                           (string-to-octets (pack "N" 1) :encoding :latin-1))
+          ;;(finish-output (%socket client))
+          (format t "recieved version number: ~a~%" v)
           (%socket client)))))
 
 (defun read-from (socket size)
   (let ((rec (sockets:receive-from socket :size size)))
-    (format t "~a~%" rec)
+    (format t "recieved bytes: ~a~%" rec)
     (let ((res
-           (octets-to-string
-            (coerce rec
-                    '(vector (unsigned-byte 8)))
-            :encoding :utf-8)))
-      (format t "res: ~a~%" res)
+           (octets-to-string (coerce rec '(vector (unsigned-byte 8)))
+                             :encoding :latin-1)))
+      (format t "octets-to-string gives: ~a~%" res)
       res)))
 
 (defmethod %get-response ((client sphinx-client) &key fp client-version)
   (multiple-value-bind (status version len) (unpack "n2N" (read-from fp 8))
-    (format t "~a : ~a : ~a~%" status version len)
+    (format t "status: ~a~%version: ~a~%length: ~a~%" status version len)
     (let ((response ())
           (left len))
       (loop
-         (when (< left 0)
+         (when (<= left 0)
            (return))
+         (format t "left: ~a~%" left)
          (let ((chunk (read-from fp left)))
+           (format t "chunk: ~a~%" chunk)
+           (format t "chunk length: ~a~%" (length chunk))
            (if (> (length chunk) 0)
                (progn
                  (setf response (concatenate 'vector response chunk))
-                 (- left (length chunk)))
+                 (setf left (- left (length chunk))))
                (return))))
+      (close fp)
       (let ((done (length response)))
+        (format t "got response of length: ~a~%raw response: ~a~%" done response)
         (cond ((or (not response)
                    (not (eql done len)))
                (if len
@@ -266,19 +270,24 @@
 
 (defmethod run-queries ((client sphinx-client))
   (assert (> (length (reqs client)) 0))
-  (let* ((requests (pack "Na*" (length (reqs client)) (reqs client)))
-         (data (pack "nnN/a*" +searchd-command-search+ +ver-command-search+ requests)))
-    (setf (reqs client) ())
-    (let ((fp (%connect client)))
-      (when fp
-        (%send client :fp fp :data data)
-        (let ((response (%get-response client :fp fp :client-version +ver-command-search+)))
-          (format t "~a~%" response))))))
+  (let ((requests (pack "Na*" (length (reqs client)) (reqs client))))
+    (format t "requests:~%~A~%length requests: ~a~%" requests (length requests))
+    (let ((data (pack "nnN/a*" +searchd-command-search+ +ver-command-search+ requests)))
+      (setf (reqs client) ())
+      (let ((fp (%connect client)))
+        (when fp
+          (%send client :fp fp :data data)
+          (let ((response (%get-response client :fp fp :client-version +ver-command-search+)))
+            (format t "run-queries response: ~a~%" response)))))))
 
 
 (defmethod %send ((client sphinx-client) &key fp data)
-  (format t "Writing to socket ~a~%" fp)
-  (sockets:send-to fp (string-to-octets data :encoding :utf-8)))
+  (format t "writing to socket ~a~%" fp)
+  (format t "data to be sent: ~a~%" data)
+  (format t "data as octets: ~a~%" (string-to-octets data :encoding :latin-1))
+  (sockets:send-to fp (string-to-octets data :encoding :latin-1))
+  ;;(finish-output fp)
+)
 
 
 (defmethod add-query ((client sphinx-client) &key query (index "*") (comment ""))
@@ -313,7 +322,7 @@
                           (pack "N/a*" (if (select client)
                                            (select client)
                                            "")))))
-   (format t "req is: ~a~%" req)
+   (format t "req is: ~a~%" (string-to-octets req))
    (setf (reqs client) (append (reqs client) (list req))))
  (length (reqs client)))
 
@@ -362,12 +371,12 @@
 
 
 (defun %pack-hash (hash-table)
-  (when (hash-table-count hash-table)
   (concatenate 'string
                (pack "N" (hash-table-count hash-table))
-               (maphash #'(lambda (k v)
-                            (pack "N/a*N" k v))
-                        hash-table))))
+               (when (hash-table-count hash-table)
+                 (maphash #'(lambda (k v)
+                              (pack "N/a*N" k v))
+                          hash-table))))
 
 
 (defun %pack-array-signed-quads (values-list)

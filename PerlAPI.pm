@@ -16,6 +16,12 @@ use Encode qw/encode_utf8 decode_utf8/;
 my $is_native64 = $Config{longsize} == 8 || defined $Config{use64bitint} || defined $Config{use64bitall};
 
 
+use Devel::Peek;
+
+use utf8;
+binmode(STDERR, ":utf8");
+
+
 =head1 NAME
 
 Sphinx::Search - Sphinx search engine API Perl client
@@ -479,6 +485,10 @@ sub _Send {
     my $data = shift;
 
     $self->{_log}->debug("Writing to socket") if $self->{_debug};
+
+    print STDERR "writing data:\n";
+    print STDERR Dump($data) . "\n";
+
     $fp->write($data); return 1;
     if ($fp->eof || ! $fp->write($data)) {
         $self->_Error("connection unexpectedly closed (timed out?): $!");
@@ -1376,6 +1386,11 @@ sub AddQuery {
 
     my $req;
     $req = pack ( "NNNNN", $self->{_offset}, $self->{_limit}, $self->{_mode}, $self->{_ranker}, $self->{_sort} ); # mode and limits
+
+    print STDERR Dump( pack( "N", 20 ) );
+    print STDERR "req a: $self->{_offset}  $self->{_limit}  \n";
+    print STDERR Dump($req);
+
     $req .= pack ( "N/a*", $self->{_sortby});
     $req .= pack ( "N/a*", $self->{_string_encoder}->($query) ); # query itself
     $req .= pack ( "N*", scalar(@{$self->{_weights}}), @{$self->{_weights}});
@@ -1420,16 +1435,30 @@ sub AddQuery {
         $req .= _PackFloat($a->{lat}) . _PackFloat($a->{long});
     }
 
+    print STDERR "before per-indexe weights\n";
+    print STDERR Dump($req);
+
     # per-index weights
     $req .= pack( "N", scalar keys %{$self->{_indexweights}});
     $req .= pack ( "N/a*N", $_, $self->{_indexweights}->{$_} ) for keys %{$self->{_indexweights}};
 
+    print STDERR "AFTER per-indexe weights\n";
+    print STDERR Dump($req);
+
     # max query time
     $req .= pack ( "N", $self->{_maxquerytime} );
+
+    print STDERR "before per-field weights\n";
+    print STDERR Dump($req);
 
     # per-field weights
     $req .= pack ( "N", scalar keys %{$self->{_fieldweights}} );
     $req .= pack ( "N/a*N", $_, $self->{_fieldweights}->{$_}) for keys %{$self->{_fieldweights}};
+
+    print STDERR "AFTER per-field weights\n";
+    print STDERR Dump($req);
+
+
     # comment
     $req .= pack ( "N/a*", $comment);
 
@@ -1455,6 +1484,9 @@ sub AddQuery {
 
     # select list
     $req .= pack("N/a*", $self->{_select} || '');
+
+    print STDERR "added req:\n";
+    print STDERR Dump($req) . "\n";
 
     push(@{$self->{_reqs}}, $req);
 
@@ -1503,13 +1535,30 @@ sub RunQueries {
     ##################
     my $nreqs = @{$self->{_reqs}};
     my $req = pack("Na*", $nreqs, join("", @{$self->{_reqs}}));
-    $req = pack ( "nnN/a*", SEARCHD_COMMAND_SEARCH, VER_COMMAND_SEARCH, $req); # add header
+
+    #$req = pack ( "nnN/a*", SEARCHD_COMMAND_SEARCH, VER_COMMAND_SEARCH, $req); # add header
+
+    my $reqa = pack ( "nn", SEARCHD_COMMAND_SEARCH, VER_COMMAND_SEARCH );
+
+    print STDERR "runqueries req header:\n";
+    print STDERR Dump($reqa) . "\n";
+
+    print STDERR 'len req: ' . length( $req ) . "\n";
+
+    $req = $reqa . pack ( "N/a*", $req); # add header
+
+    print STDERR "runqueries sending command:\n";
+    print STDERR Dump($req) . "\n";
+
     $self->_Send($fp, $req);
 
     $self->{_reqs} = [];
 
     my $response = $self->_GetResponse ( $fp, VER_COMMAND_SEARCH );
     return unless $response;
+
+    print STDERR "runqueries: got response:\n";
+    print STDERR Dump($response) . "\n";
 
     ##################
     # parse response
@@ -1734,6 +1783,10 @@ sub BuildExcerpts {
 	##########################
 
 	$req = pack ( "nnN/a*", SEARCHD_COMMAND_EXCERPT, VER_COMMAND_EXCERPT, $req); # add header
+
+    print STDERR "sending:\n";
+    print STDERR Dump($req) . "\n";
+
 	$self->_Send($fp, $req);
 
 	my $response = $self->_GetResponse($fp, VER_COMMAND_EXCERPT);

@@ -6,6 +6,8 @@
   (:use :cl :asdf))
 
 (asdf:operate 'asdf:load-op :fiveam)
+(asdf:operate 'asdf:load-op :alexandria)
+(asdf:operate 'asdf:load-op :iolib.sockets)
 
 (in-package :com.oppermannen.sphinx-search-api-test-asd)
 
@@ -18,9 +20,15 @@
   :licence "To be determined"
   :description "Test suite for SPHINX-SEARCH-API"
   :long-description "this is the test suite system for SPHINX-SEARCH-API"
+  :serial t
   :components ((:module "test"
+                        :serial t
                         :components ((:file "package")
-                                     (:file "test" :depends-on ("package")))))
+                                     (:file "echo-server")
+                                     (:file "test"))))
   :depends-on (:iolib.sockets
+               :cl-pack
+               :alexandria
+               :babel
                :sphinx-search-api))
 

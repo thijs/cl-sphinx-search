@@ -6,5 +6,8 @@
   (:nicknames :sphinx-search-api-test)
   (:use :cl
         :fiveam
+        :cl-pack
+        :babel
         :iolib.sockets
+        :alexandria
         :com.oppermannen.sphinx-search-api))
