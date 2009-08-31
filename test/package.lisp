@@ -2,8 +2,9 @@
 
 (in-package #:cl-user)
 
-(defpackage #:com.oppermannen.bayes-classifier-test
-  (:nicknames :bayes-classifier-test)
+(defpackage #:com.oppermannen.sphinx-search-api-test
+  (:nicknames :sphinx-search-api-test)
   (:use :cl
         :fiveam
-        :com.oppermannen.bayes-classifier))
+        :iolib.sockets
+        :com.oppermannen.sphinx-search-api))

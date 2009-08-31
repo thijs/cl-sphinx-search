@@ -5,6 +5,8 @@
 (defpackage #:com.oppermannen.sphinx-search-api-test-asd
   (:use :cl :asdf))
 
+(asdf:operate 'asdf:load-op :fiveam)
+
 (in-package :com.oppermannen.sphinx-search-api-test-asd)
 
 
@@ -19,5 +21,6 @@
   :components ((:module "test"
                         :components ((:file "package")
                                      (:file "test" :depends-on ("package")))))
-  :depends-on (:sphinx-search-api))
+  :depends-on (:iolib.sockets
+               :sphinx-search-api))
 
