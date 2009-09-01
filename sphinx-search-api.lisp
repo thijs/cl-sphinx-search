@@ -283,7 +283,22 @@
               (%parse-response response))))))))
 
 (defmethod %parse-response ((client sphinx-client) response n-requests)
-
+  (let ((results ())
+        (p 0))
+    (loop for i from 0 to n-requests
+         (do
+          (let ((status (unpack "N" (subseq response p 4))))
+            (setf p (+ p 4))
+            (cond ((not (eql status +searchd-ok+))
+                   (let ((len (unpack "N" (subseq response p 4))))
+                     (setf p (+ p 4))
+                     (let ((message (subseq response p len)))
+                       (setf p (+ p len))
+                       (cond ((eql status +searchd-warning+)
+                              (setf (gethash 'warning result) message))
+                             (t
+                              (setf (gethash 'error result) message)
+                              (
   )
 
 
