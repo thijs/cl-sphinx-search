@@ -278,7 +278,13 @@
         (when fp
           (%send client :fp fp :data data)
           (let ((response (%get-response client :fp fp :client-version +ver-command-search+)))
-            (format t "run-queries response: ~a~%" response)))))))
+            (format t "run-queries response: ~a~%" response)
+            (when response
+              (%parse-response response))))))))
+
+(defmethod %parse-response ((client sphinx-client) response n-requests)
+
+  )
 
 
 (defmethod %send ((client sphinx-client) &key fp data)
