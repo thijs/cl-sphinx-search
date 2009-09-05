@@ -13,7 +13,7 @@ my $sphinx = Sphinx::Search->new();
 
 warn 'sphinx: ' . Dumper $sphinx;
 
-$sphinx->AddQuery("first");
+$sphinx->AddQuery("test");
 
 my $results = $sphinx->RunQueries;
 
