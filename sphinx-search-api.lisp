@@ -185,7 +185,7 @@
         ((%path client)
          (setf (%socket client)
                (sockets:make-socket :address-family :local :type :stream
-                            :local-filename (namestring (%path client)))))
+                                    :local-filename (namestring (%path client)))))
         (t
          (setf (%socket client)
                (sockets:make-socket :address-family :internet :type :stream
@@ -462,11 +462,11 @@
   #+SPHINX-SEARCH-DEBUG (format t "data as octets: ~a~%" (string-to-octets data :encoding :latin-1))
   (sockets:send-to fp (string-to-octets data :encoding :latin-1))
   ;;(finish-output fp)
-)
+  )
 
 
 (defmethod add-query ((client sphinx-client) &key query (index "*") (comment ""))
- (let ((req (concatenate 'string
+  (let ((req (concatenate 'string
                           (pack "NNNNN" (offset client) (limit client) (mode client) (ranker client) (sort-mode client))
                           (pack "N/a*" (sort-by client))
                           (pack "N/a*" query)
@@ -497,9 +497,9 @@
                           (pack "N/a*" (if (select client)
                                            (select client)
                                            "")))))
-   #+SPHINX-SEARCH-DEBUG (format t "req is: ~a~%" (string-to-octets req))
-   (setf (reqs client) (append (reqs client) (list req))))
- (length (reqs client)))
+    #+SPHINX-SEARCH-DEBUG (format t "req is: ~a~%" (string-to-octets req))
+    (setf (reqs client) (append (reqs client) (list req))))
+  (length (reqs client)))
 
 
 (defun %pack-overrides (overrides)
@@ -558,7 +558,7 @@
   (concatenate 'string
                (pack "N" (length values-list))
                (map 'string #'(lambda (value)
-                        (pack "q>" value)) values-list)))
+                                (pack "q>" value)) values-list)))
 
 (defun %pack-float (float-value)
   (pack "N" (unpack "L*" (pack "f" float-value))))
