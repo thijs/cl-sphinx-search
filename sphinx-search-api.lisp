@@ -154,6 +154,11 @@
     :initarg :last-warning
     :initform ""
     :documentation "last warning message")
+   (status
+    :accessor status
+    :initarg :status
+    :initform ()
+    :documentation "status of last query")
    (reqs
     :accessor reqs
     :initarg :reqs
@@ -161,23 +166,143 @@
     :documentation "requests array for multi-query")))
 
 
-(defmethod set-server ((client sphinx-client) &key host port)
-  #+SPHINX-SEARCH-DEBUG (format t "set-server -> ~s : ~s" host port)
-  (assert (stringp host))
-  (cond ((string= host "/" :start1 0 :end1 1)
-         (setf (%path client) host)
-         (setf (%host client) ())
-         (setf (%port client) ()))
-        ((string= host "unix://" :start1 0 :end1 7)
-         (setf (%path client) (subseq host 6 (length host)))
+(defvar *response-length* ())
+
+
+(defmacro adv-p (n)
+  `(setf p (+ p ,n)))
+
+
+(defmethod set-server ((client sphinx-client) &key (host "localhost") (port 3312) path)
+  "Method 'set-server'
+
+   (set-server sph :host host :port port)
+   (set-server sph :path unix-path)
+
+In the first form, sets the host (string) and port (integer) details for the
+searchd server using a network (INET) socket.
+
+In the second form, where :path is a local filesystem path (optionally prefixed
+by 'unix://'), sets the client to access the searchd server via a local (UNIX
+domain) socket at the specified path.
+
+Returns sph.
+"
+  (cond (path
+         (assert (stringp path))
+         (when (string= path "unix://" :start1 0 :end1 7)
+           (setf path (subseq path 6)))
+         #+SPHINX-SEARCH-DEBUG (format t "set-server -> ~s~%" path)
+         (setf (%path client) path)
          (setf (%host client) ())
          (setf (%port client) ()))
         (t
-         #+SPHINX-SEARCH-DEBUG (format t "set-server -> ~s : ~s" host port)
+         #+SPHINX-SEARCH-DEBUG (format t "set-server -> ~s : ~s~%" host port)
+         (assert (stringp host))
          (assert (numberp port))
          (setf (%host client) host)
          (setf (%port client) port)
-         (setf (%path client) ()))))
+         (setf (%path client) ())))
+  client)
+
+
+(defmethod set-limits ((client sphinx-client) &key (offset 0) limit (max 1000) cutoff)
+  "Method 'set-limits'
+
+   (set-limits sph :limit limit)
+   (set-limits sph :offset offset :limit limit)
+   (set-limits sph :offset offset :limit limit :max max-matches)
+
+Set limit of matches to return. Defaults to offset 0 and 1000 max matches.
+
+Returns sph.
+"
+  (assert (and (numberp offset) (numberp limit) (>= offset 0) (>= limit 0)))
+  (assert (and (numberp max) (>= max 0)))
+  (setf (offset client) offset)
+  (setf (limit client) limit)
+  (when (> max 0)
+    (setf (max-matches client) max))
+  (when (and cutoff (>= cutoff 0))
+    (setf (cutoff client) cutoff))
+  client)
+
+
+(defmethod get-last-error ((client sphinx-client))
+  "Get the last error message sent by searchd"
+  (last-error client))
+
+
+(defmethod get-last-warning ((client sphinx-client))
+  "Get the last warning message sent by searchd"
+  (last-warning client))
+
+
+(defmethod query ((client sphinx-client) query &key (index "*") (comment ""))
+  (assert (eql (length (reqs client)) 0))
+  (add-query client query :index index :comment comment)
+  (let* ((result (car (run-queries client))))
+    (when result
+      (setf (last-error client) (gethash 'status-message result))
+      (setf (last-warning client) (gethash 'status-message result))
+      (let ((status (gethash 'status result)))
+        (setf (status client) status)
+        (when (or (eql status +searchd-ok+)
+                  (eql status +searchd-warning+))
+          result)))))
+
+
+(defmethod run-queries ((client sphinx-client))
+  (assert (> (length (reqs client)) 0))
+  (let ((requests (pack "Na*" (length (reqs client)) (reqs client))))
+    #+SPHINX-SEARCH-DEBUG (format t "requests:~%~A~%length requests: ~a~%" requests (length requests))
+    (let ((data (pack "nnN/a*" +searchd-command-search+ +ver-command-search+ requests)))
+      (setf (reqs client) ())
+      (let ((fp (%connect client)))
+        (when fp
+          (%send client :fp fp :data data)
+          (let ((response (%get-response client :fp fp :client-version +ver-command-search+)))
+            #+SPHINX-SEARCH-DEBUG (format t "run-queries response: ~a~%" response)
+            (when response
+              (setf *response-length* (length response))
+              (%parse-response response (length (reqs client))))))))))
+
+
+(defmethod add-query ((client sphinx-client) query &key (index "*") (comment ""))
+  (let ((req (concatenate 'string
+                          (pack "NNNNN" (offset client) (limit client) (mode client) (ranker client) (sort-mode client))
+                          (pack "N/a*" (sort-by client))
+                          (pack "N/a*" query)
+                          (pack "N*" (length (weights client)) (weights client))
+                          (pack "N/a*" index)
+                          (pack "N" 1) (pack "Q>" (min-id client)) (pack "Q>" (max-id client))
+                          (pack "N" (length (filters client)))
+                          (%pack-filters (filters client))
+                          (pack "NN/a*" (group-function client) (group-by client))
+                          (pack "N" (max-matches client))
+                          (pack "N/a*" (group-sort client))
+                          (pack "NNN" (cutoff client) (retry-count client) (retry-delay client))
+                          (pack "N/a*" (group-distinct client))
+                          (cond ((anchor client)
+                                 (concatenate 'string
+                                              (pack "N/a*" (first (anchor client)))
+                                              (pack "N/a*" (third (anchor client)))
+                                              (%pack-float (second (anchor client)))
+                                              (%pack-float (last (anchor client)))))
+                                (t
+                                 (pack "N" 0)))
+                          (%pack-hash (index-weights client))
+                          (pack "N" (max-query-time client))
+                          (%pack-hash (field-weights client))
+                          (pack "N/a*" comment)
+                          (pack "N" (hash-table-count (overrides client)))
+                          (%pack-overrides (overrides client))
+                          (pack "N/a*" (if (select client)
+                                           (select client)
+                                           "")))))
+    #+SPHINX-SEARCH-DEBUG (format t "req is: ~a~%" (string-to-octets req))
+    (setf (reqs client) (append (reqs client) (list req))))
+  (length (reqs client)))
 
 
 (defmethod %connect ((client sphinx-client))
@@ -191,7 +316,7 @@
                (sockets:make-socket :address-family :internet :type :stream
                                     :remote-host (%host client)
                                     :remote-port (%port client)))))
-  (let ((v (unpack "N*" (read-from (%socket client) 4))))
+  (let ((v (unpack "N*" (%read-from (%socket client) 4))))
     (if (< v 1)
         (progn
           (close (%socket client))
@@ -203,7 +328,8 @@
           #+SPHINX-SEARCH-DEBUG (format t "recieved version number: ~a~%" v)
           (%socket client)))))
 
-(defun read-from (socket size)
+
+(defun %read-from (socket size)
   (let ((rec (sockets:receive-from socket :size size)))
     #+SPHINX-SEARCH-DEBUG (format t "recieved bytes: ~a~%" rec)
     (let ((res
@@ -212,8 +338,9 @@
       #+SPHINX-SEARCH-DEBUG (format t "octets-to-string gives: ~a~%" res)
       res)))
 
+
 (defmethod %get-response ((client sphinx-client) &key fp client-version)
-  (multiple-value-bind (status version len) (unpack "n2N" (read-from fp 8))
+  (multiple-value-bind (status version len) (unpack "n2N" (%read-from fp 8))
     #+SPHINX-SEARCH-DEBUG (format t "status: ~a~%version: ~a~%length: ~a~%" status version len)
     (let ((response ())
           (left len))
@@ -221,7 +348,7 @@
          (when (<= left 0)
            (return))
          #+SPHINX-SEARCH-DEBUG (format t "left: ~a~%" left)
-         (let ((chunk (read-from fp left)))
+         (let ((chunk (%read-from fp left)))
            #+SPHINX-SEARCH-DEBUG (format t "chunk: ~a~%" chunk)
            #+SPHINX-SEARCH-DEBUG (format t "chunk length: ~a~%" (length chunk))
            (if (> (length chunk) 0)
@@ -255,34 +382,6 @@
                (when (< version client-version)
                  (setf (last-warning client) "searchd v.x.x is older than client's v.y.y, some options might not work"))
                response))))))
-
-(defmethod set-limits ((client sphinx-client) &key offset limit max cutoff)
-  (assert (and (numberp offset) (numberp limit) (>= offset 0) (>= limit 0)))
-  (assert (and (numberp max) (>= max 0)))
-  (setf (offset client) offset)
-  (setf (limit client) limit)
-  (when (> max 0)
-    (setf (max-matches client) max))
-  (when (and cutoff (>= cutoff 0))
-    (setf (cutoff client) cutoff)))
-
-
-(defvar *response-length* ())
-
-(defmethod run-queries ((client sphinx-client))
-  (assert (> (length (reqs client)) 0))
-  (let ((requests (pack "Na*" (length (reqs client)) (reqs client))))
-    #+SPHINX-SEARCH-DEBUG (format t "requests:~%~A~%length requests: ~a~%" requests (length requests))
-    (let ((data (pack "nnN/a*" +searchd-command-search+ +ver-command-search+ requests)))
-      (setf (reqs client) ())
-      (let ((fp (%connect client)))
-        (when fp
-          (%send client :fp fp :data data)
-          (let ((response (%get-response client :fp fp :client-version +ver-command-search+)))
-            #+SPHINX-SEARCH-DEBUG (format t "run-queries response: ~a~%" response)
-            (when response
-              (setf *response-length* (length response))
-              (%parse-response response (length (reqs client))))))))))
 
 
 (defun %parse-response (response n-requests)
@@ -440,10 +539,6 @@
     (values (nreverse fields) p)))
 
 
-(defmacro adv-p (n)
-  `(setf p (+ p ,n)))
-
-
 (defun %get-response-status (response start)
   (let ((status (unpack "N" (subseq response start (+ start 4))))
         (p (+ start 4)))
@@ -460,46 +555,7 @@
   #+SPHINX-SEARCH-DEBUG (format t "writing to socket ~a~%" fp)
   #+SPHINX-SEARCH-DEBUG (format t "data to be sent: ~a~%" data)
   #+SPHINX-SEARCH-DEBUG (format t "data as octets: ~a~%" (string-to-octets data :encoding :latin-1))
-  (sockets:send-to fp (string-to-octets data :encoding :latin-1))
-  ;;(finish-output fp)
-  )
-
-
-(defmethod add-query ((client sphinx-client) &key query (index "*") (comment ""))
-  (let ((req (concatenate 'string
-                          (pack "NNNNN" (offset client) (limit client) (mode client) (ranker client) (sort-mode client))
-                          (pack "N/a*" (sort-by client))
-                          (pack "N/a*" query)
-                          (pack "N*" (length (weights client)) (weights client))
-                          (pack "N/a*" index)
-                          (pack "N" 1) (pack "Q>" (min-id client)) (pack "Q>" (max-id client))
-                          (pack "N" (length (filters client)))
-                          (%pack-filters (filters client))
-                          (pack "NN/a*" (group-function client) (group-by client))
-                          (pack "N" (max-matches client))
-                          (pack "N/a*" (group-sort client))
-                          (pack "NNN" (cutoff client) (retry-count client) (retry-delay client))
-                          (pack "N/a*" (group-distinct client))
-                          (cond ((anchor client)
-                                 (concatenate 'string
-                                              (pack "N/a*" (first (anchor client)))
-                                              (pack "N/a*" (third (anchor client)))
-                                              (%pack-float (second (anchor client)))
-                                              (%pack-float (last (anchor client)))))
-                                (t
-                                 (pack "N" 0)))
-                          (%pack-hash (index-weights client))
-                          (pack "N" (max-query-time client))
-                          (%pack-hash (field-weights client))
-                          (pack "N/a*" comment)
-                          (pack "N" (hash-table-count (overrides client)))
-                          (%pack-overrides (overrides client))
-                          (pack "N/a*" (if (select client)
-                                           (select client)
-                                           "")))))
-    #+SPHINX-SEARCH-DEBUG (format t "req is: ~a~%" (string-to-octets req))
-    (setf (reqs client) (append (reqs client) (list req))))
-  (length (reqs client)))
+  (sockets:send-to fp (string-to-octets data :encoding :latin-1)))
 
 
 (defun %pack-overrides (overrides)
@@ -520,6 +576,7 @@
                                                                (pack "N" v)))))
                                        (get-hash 'values entry))))
              overrides)))
+
 
 (defun %pack-filters (filters)
   (map 'string #'(lambda (filter)
@@ -543,8 +600,6 @@
        filters))
 
 
-
-
 (defun %pack-hash (hash-table)
   (concatenate 'string
                (pack "N" (hash-table-count hash-table))
@@ -560,8 +615,8 @@
                (map 'string #'(lambda (value)
                                 (pack "q>" value)) values-list)))
 
+
 (defun %pack-float (float-value)
   (pack "N" (unpack "L*" (pack "f" float-value))))
-
 
 
