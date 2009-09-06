@@ -74,14 +74,18 @@
 ;;                SPH_ATTR_BIGINT,
 ;;                SPH_ATTR_MULTI)
 
-(defconstant +sph-attr-types+ (list +sph-attr-none+
-                  +sph-attr-integer+
-                  +sph-attr-timestamp+
-                  +sph-attr-ordinal+
-                  +sph-attr-bool+
-                  +sph-attr-float+
-                  +sph-attr-bigint+
-                  +sph-attr-multi+))
+(defmacro define-constant (name value &optional doc)
+  `(defconstant ,name (if (boundp ',name) (symbol-value ',name) ,value)
+     ,@(when doc (list doc))))
+
+(define-constant +sph-attr-types+ (list +sph-attr-none+
+                                        +sph-attr-integer+
+                                        +sph-attr-timestamp+
+                                        +sph-attr-ordinal+
+                                        +sph-attr-bool+
+                                        +sph-attr-float+
+                                        +sph-attr-bigint+
+                                        +sph-attr-multi+))
 
 ;; known grouping functions
 (defconstant +sph-groupby-day+ 0)
