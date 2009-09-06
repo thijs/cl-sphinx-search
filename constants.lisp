@@ -1,6 +1,6 @@
 ;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
-(in-package #:com.oppermannen.sphinx-search-api)
+(in-package #:cl-sphinx-search)
 
 
 ;; known searchd commands

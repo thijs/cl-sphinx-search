@@ -2,8 +2,7 @@
 
 (in-package #:cl-user)
 
-(defpackage #:com.oppermannen.sphinx-search-api
-  (:nicknames "sphinx-search-api")
+(defpackage #:cl-sphinx-search
   (:use :cl :iolib.sockets :babel :cl-pack)
   (:export #:set-server
            #:set-limits

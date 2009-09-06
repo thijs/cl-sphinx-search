@@ -2,7 +2,7 @@
 
 (in-package #:cl-user)
 
-(defpackage #:com.oppermannen.sphinx-search-api-test
+(defpackage #:cl-sphinx-search-test
   (:nicknames :sphinx-search-api-test)
   (:use :cl
         :fiveam
@@ -10,4 +10,4 @@
         :babel
         :iolib.sockets
         :alexandria
-        :com.oppermannen.sphinx-search-api))
+        :cl-sphinx-search))

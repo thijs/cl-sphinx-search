@@ -4,7 +4,7 @@
 ;;;     which is available at http://jsnell.iki.fi/tmp/echo-server.lisp.
 ;;;
 
-(in-package #:com.oppermannen.sphinx-search-api-test)
+(in-package #:cl-sphinx-search-test)
 
 
 (defparameter *port* 9999)

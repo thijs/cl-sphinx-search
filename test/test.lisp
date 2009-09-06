@@ -1,6 +1,6 @@
 ;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 
-(in-package #:com.oppermannen.sphinx-search-api-test)
+(in-package #:cl-sphinx-search-test)
 
 
 (5am:def-suite sphinx-search-api-tests
