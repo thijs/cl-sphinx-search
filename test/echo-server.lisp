@@ -3,6 +3,7 @@
 ;;; --- Multiplexer example, adapted from Juho Snellman's version for SBCL
 ;;;     which is available at http://jsnell.iki.fi/tmp/echo-server.lisp.
 ;;;
+;;;; See the LICENSE file for licensing information.
 
 (in-package #:cl-sphinx-search-test)
 
