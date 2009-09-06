@@ -1,7 +1,7 @@
 Common Lisp Sphinx Search API client
 ===========
 
-See docs in `docs/`
+See docs in `doc/`
 
 
 ### UNFINISHED & UNTESTED
@@ -10,7 +10,7 @@ This is a rather blunt port of the perl API found on CPAN, at
 [Sphinx-Search-0.22](http://search.cpan.org/~jjschutz/Sphinx-Search-0.22/).
 
 It is mostly unfinished (the only done parts are descibed in the
-documentation found in `docs/`), and most definitely **untested**. So
+documentation found in `doc/`), and most definitely **untested**. So
 use at your own risk.
 
 
