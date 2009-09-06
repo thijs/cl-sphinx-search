@@ -25,6 +25,11 @@
     :initarg :socket
     :initform ()
     :documentation "searchd unix-domain socket")
+   (%encoding
+    :accessor %encoding
+    :initarg :encoding
+    :initform :utf-8
+    :documentation "the encoding used; utf-8 or latin-1 for sbcs")
    (offset
     :accessor offset
     :initarg :offset
@@ -167,6 +172,12 @@
     :documentation "list of requests for batched query runs"))
   (:documentation
    "@short{The sphinx-search class.}
+
+    @begin{pre}
+    (let ((sph (make-instance 'sphinx-client :host \"localhost\" :port 3315)))
+       (add-query sph \"test\")
+       (run-queries sph))
+    @end{pre}
 
     The interface to the search daemon goes through this class.
 
@@ -373,14 +384,13 @@
     #+SPHINX-SEARCH-DEBUG (format t "requests:~%~A~%length requests: ~a~%" requests (length requests))
     (let ((data (pack "nnN/a*" +searchd-command-search+ +ver-command-search+ requests)))
       (setf (reqs client) ())
-      (let ((fp (%connect client)))
-        (when fp
-          (%send client :fp fp :data data)
-          (let ((response (%get-response client :fp fp :client-version +ver-command-search+)))
-            #+SPHINX-SEARCH-DEBUG (format t "run-queries response: ~a~%" response)
-            (when response
-              (setf *response-length* (length response))
-              (%parse-response response (length (reqs client))))))))))
+      (when (%connect client)
+        (%send client data)
+        (let ((response (%get-response client :client-version +ver-command-search+)))
+          #+SPHINX-SEARCH-DEBUG (format t "run-queries response: ~a~%" response)
+          (when response
+            (setf *response-length* (length response))
+            (%parse-response response (length (reqs client)))))))))
 
 
 (defgeneric add-query (client query &key index comment)
@@ -420,7 +430,7 @@
   (let ((req (concatenate 'string
                           (pack "NNNNN" (offset client) (limit client) (mode client) (ranker client) (sort-mode client))
                           (pack "N/a*" (sort-by client))
-                          (pack "N/a*" query)
+                          (pack "N/a*" (octets-to-string (string-to-octets query :encoding (%encoding client)) :encoding :latin-1))
                           (pack "N*" (length (weights client)) (weights client))
                           (pack "N/a*" index)
                           (pack "N" 1) (pack "Q>" (min-id client)) (pack "Q>" (max-id client))
@@ -448,7 +458,7 @@
                           (pack "N/a*" (if (select client)
                                            (select client)
                                            "")))))
-    #+SPHINX-SEARCH-DEBUG (format t "req is: ~a~%" (string-to-octets req))
+    #+SPHINX-SEARCH-DEBUG (format t "req is: ~a~%" (string-to-octets req :encoding (%encoding client)))
     (setf (reqs client) (append (reqs client) (list req))))
   (length (reqs client)))
 
@@ -464,11 +474,12 @@
                (sockets:make-socket :address-family :internet :type :stream
                                     :remote-host (%host client)
                                     :remote-port (%port client)))))
-  (let ((v (unpack "N*" (%read-from (%socket client) 4))))
+  (let ((v (unpack "N*" (%read-from client 4))))
     (if (< v 1)
         (progn
           (close (%socket client))
-          (setf (last-error client) "connection to socket failed"))
+          (setf (last-error client) "connection to socket failed")
+          ())
         (progn
           (sockets:send-to (%socket client)
                            (string-to-octets (pack "N" 1) :encoding :latin-1))
@@ -476,8 +487,8 @@
           (%socket client)))))
 
 
-(defun %read-from (socket size)
-  (let ((rec (sockets:receive-from socket :size size)))
+(defmethod %read-from ((client sphinx-client) size)
+  (let ((rec (sockets:receive-from (%socket client) :size size)))
     #+SPHINX-SEARCH-DEBUG (format t "recieved bytes: ~a~%" rec)
     (let ((res
            (octets-to-string (coerce rec '(vector (unsigned-byte 8)))
@@ -486,8 +497,8 @@
       res)))
 
 
-(defmethod %get-response ((client sphinx-client) &key fp client-version)
-  (multiple-value-bind (status version len) (unpack "n2N" (%read-from fp 8))
+(defmethod %get-response ((client sphinx-client) &key client-version)
+  (multiple-value-bind (status version len) (unpack "n2N" (%read-from client 8))
     #+SPHINX-SEARCH-DEBUG (format t "status: ~a~%version: ~a~%length: ~a~%" status version len)
     (let ((response ())
           (left len))
@@ -495,7 +506,7 @@
          (when (<= left 0)
            (return))
          #+SPHINX-SEARCH-DEBUG (format t "left: ~a~%" left)
-         (let ((chunk (%read-from fp left)))
+         (let ((chunk (%read-from client left)))
            #+SPHINX-SEARCH-DEBUG (format t "chunk: ~a~%" chunk)
            #+SPHINX-SEARCH-DEBUG (format t "chunk length: ~a~%" (length chunk))
            (if (> (length chunk) 0)
@@ -503,7 +514,7 @@
                  (setf response (concatenate 'string response chunk))
                  (setf left (- left (length chunk))))
                (return))))
-      (close fp)
+      (close (%socket client))
       (let ((done (length response)))
         #+SPHINX-SEARCH-DEBUG (format t "got response of length: ~a~%raw response: ~a~%" done response)
         (cond ((or (not response)
@@ -698,11 +709,11 @@
            (values status p "ok")))))
 
 
-(defmethod %send ((client sphinx-client) &key fp data)
-  #+SPHINX-SEARCH-DEBUG (format t "writing to socket ~a~%" fp)
+(defmethod %send ((client sphinx-client) data)
+  #+SPHINX-SEARCH-DEBUG (format t "writing to socket ~a~%" (%socket client))
   #+SPHINX-SEARCH-DEBUG (format t "data to be sent: ~a~%" data)
   #+SPHINX-SEARCH-DEBUG (format t "data as octets: ~a~%" (string-to-octets data :encoding :latin-1))
-  (sockets:send-to fp (string-to-octets data :encoding :latin-1)))
+  (sockets:send-to (%socket client) (string-to-octets data :encoding :latin-1)))
 
 
 (defun %pack-overrides (overrides)
