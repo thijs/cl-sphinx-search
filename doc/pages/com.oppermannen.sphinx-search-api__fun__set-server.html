@@ -1,0 +1,15 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Function set-server</title><link rel="stylesheet" type="text/css" href="../index.css"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><div id="header"><table cellspacing="0" cellpadding="0" width="100%"><tr><td valign="center">
+		  
+	      <b> Common Lisp Sphinx Search API</b></td><td valign="center" align="right"><b>API documentation</b></td></tr></table></div><div class="main"><div class="padded"><p class="noindent">
+	  Package:
+	  <a href="com.oppermannen.sphinx-search-api.html">com.oppermannen.sphinx-search-api</a></p><h2 class="page-title">
+	  Function
+	  set-server</h2></div><table cellspacing="0" cellpadding="0" width="100%"><tr><td valign="top" width="60%"><div class="padded"><h3>Lambda List</h3><div class="indent"><tt>set-server</tt> (<b>client</b> <b>&amp;key</b> <b>host</b> <b>port</b> <b>path</b>)</div><h3>Arguments</h3><div class="indent"><ul><li><tt>client</tt> -- a <a href="com.oppermannen.sphinx-search-api__class__sphinx-client.html"><tt>sphinx-client</tt></a></li><li><tt>host</tt> -- the host to connect to when using an INET socket</li><li><tt>port</tt> -- the port to connect to when using an INET socket</li><li><tt>path</tt> -- the path to the unix domain socket when not using INET</li></ul></div><h3>Return Value</h3><div class="indent">client</div><h3>Details<a name="details"></a></h3><div class="indent">                    Set the server host:port or path to connect to.<br><br>    <pre>
+    (set-server client :host host :port port)
+    (set-server client :path unix-path)    </pre><br><br>    In the first form, sets the <tt>host</tt> (string) and <tt>port</tt> (integer)
+    details for the searchd server using a network (INET) socket.<br><br>    In the second form, where <tt>unix-path</tt> is a local filesystem path
+    (optionally prefixed by 'unix://'), sets the client to access the
+    searchd server via a local (UNIX domain) socket at the specified path.</div></div></td><td valign="top" width="5%">
+	     
+	  </td><td valign="top" width="35%"><h3>See also</h3><div class="indent"><table cellspacing="0" cellpadding="0"><tr><td><a href="com.oppermannen.sphinx-search-api__class__sphinx-client.html"><tt>sphinx-client</tt></a></td></tr></table></div></td></tr></table></div></body></html>
