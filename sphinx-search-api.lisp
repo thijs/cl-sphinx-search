@@ -163,7 +163,24 @@
     :accessor reqs
     :initarg :reqs
     :initform ()
-    :documentation "requests array for multi-query")))
+    :documentation "list of requests for batched query runs"))
+  (:documentation
+   "@short{The sphinx-search class.}
+
+    The interface to the search daemon goes through this class.
+
+    Set options and settings of the search to be performed on an object
+    of this class, and then have it perform one search by calling
+    @fun{query}, or add a number of queries using @fun{add-query} and
+    then calling @fun{run-queries}.
+
+    Either get a result hash or a list of result hashes back, or an error
+    that can be retrieved with the @fun{get-last-error} function.
+
+    @see{set-server}
+    @see{set-limits}
+    @see{get-last-warning}
+"))
 
 
 (defvar *response-length* ())
@@ -173,21 +190,29 @@
   `(setf p (+ p ,n)))
 
 
+(defgeneric set-server (client &key host port path)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[host]{the host to connect to when using an INET socket}
+    @arg[port]{the port to connect to when using an INET socket}
+    @arg[path]{the path to the unix domain socket when not using INET}
+    @return{client}
+    @short{Set the server host:port or path to connect to.}
+
+    @begin{pre}
+    (set-server client :host host :port port)
+    (set-server client :path unix-path)
+    @end{pre}
+
+    In the first form, sets the @code{host} (string) and @code{port} (integer)
+    details for the searchd server using a network (INET) socket.
+
+    In the second form, where @code{unix-path} is a local filesystem path
+    (optionally prefixed by 'unix://'), sets the client to access the
+    searchd server via a local (UNIX domain) socket at the specified path.
+"))
+
 (defmethod set-server ((client sphinx-client) &key (host "localhost") (port 3312) path)
-  "Method 'set-server'
-
-   (set-server sph :host host :port port)
-   (set-server sph :path unix-path)
-
-In the first form, sets the host (string) and port (integer) details for the
-searchd server using a network (INET) socket.
-
-In the second form, where :path is a local filesystem path (optionally prefixed
-by 'unix://'), sets the client to access the searchd server via a local (UNIX
-domain) socket at the specified path.
-
-Returns sph.
-"
   (cond (path
          (assert (stringp path))
          (when (string= path "unix://" :start1 0 :end1 7)
@@ -206,17 +231,26 @@ Returns sph.
   client)
 
 
+(defgeneric set-limits (client &key offset limit max cutoff)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[offset]{the offset to start returning matches from}
+    @arg[limit]{how many matches to return starting from @code{offset}}
+    @arg[max]{maximum number of matches to return}
+    @arg[cutoff]{the cutoff to stop searching at}
+    @return{client}
+    @short{Set the offset, limit, cutoff and max matches to return.}
+
+    @begin{pre}
+    (set-limits client :limit limit)
+    (set-limits client :offset offset :limit limit)
+    (set-limits client :offset offset :limit limit :max max-matches)
+    @end{pre}
+
+    Set limit of matches to return. Defaults to offset 0 and 1000 max matches.
+"))
+
 (defmethod set-limits ((client sphinx-client) &key (offset 0) limit (max 1000) cutoff)
-  "Method 'set-limits'
-
-   (set-limits sph :limit limit)
-   (set-limits sph :offset offset :limit limit)
-   (set-limits sph :offset offset :limit limit :max max-matches)
-
-Set limit of matches to return. Defaults to offset 0 and 1000 max matches.
-
-Returns sph.
-"
   (assert (and (numberp offset) (numberp limit) (>= offset 0) (>= limit 0)))
   (assert (and (numberp max) (>= max 0)))
   (setf (offset client) offset)
@@ -228,15 +262,62 @@ Returns sph.
   client)
 
 
+(defgeneric get-last-error (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{a string; the last error message returned from the @code{searchd}}
+
+    Get the last error message sent by searchd
+"))
+
 (defmethod get-last-error ((client sphinx-client))
-  "Get the last error message sent by searchd"
   (last-error client))
 
 
+(defgeneric get-last-warning (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{a string; the last warning message returned from the @code{searchd}}
+
+    Get the last warning message sent by searchd
+"))
+
 (defmethod get-last-warning ((client sphinx-client))
-  "Get the last warning message sent by searchd"
   (last-warning client))
 
+
+(defgeneric query (client query &key index comment)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[query]{the query to run through @code{searchd}}
+    @arg[index]{the index to use; defaults to \"*\"}
+    @arg[comment]{a comment describing this query; default none}
+    @return{nil or a hash containing the query results}
+    @short{Run a query through @code{searchd}.}
+
+    @begin{pre}
+    (query client \"test\")
+    @end{pre}
+
+    Query @code{searchd}. This method runs a single query through @code{searchd}.
+
+    It returns the results in a hash with the following keys:
+    @begin{dl}
+      @dt[attributes]{a hash-table containing attributes}
+      @dt[fields]{a list of fields}
+      @dt[matches]{a hash-table containing the matches}
+      @dt[status]{the status returned by @code{searchd}}
+      @dt[status-message]{the status message returned by @code{searchd}}
+      @dt[time]{the time @code{searchd} took for the query}
+      @dt[total]{the total matches returned}
+      @dt[total-found]{the total number of matches found}
+      @dt[words]{a hash-table containing the matching words with their statistics}
+    @end{dl}
+
+    @see{add-query}
+    @see{run-queries}
+
+"))
 
 (defmethod query ((client sphinx-client) query &key (index "*") (comment ""))
   (assert (eql (length (reqs client)) 0))
@@ -251,6 +332,39 @@ Returns sph.
                   (eql status +searchd-warning+))
           result)))))
 
+
+(defgeneric run-queries (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{nil or a list of hashes}
+    @short{Run the queries added with @code{add-query} through @code{searchd}.}
+
+    @begin{pre}
+    (add-query client \"test\")
+    (add-query client \"word\")
+    (run-queries client)
+    @end{pre}
+
+    Query @code{searchd} with the collected queries added with @code{add-query}.
+
+    It returns a list of hashes containing the result of each query. Each hash
+    has the following keys:
+    @begin{dl}
+      @dt[attributes]{a hash-table containing attributes}
+      @dt[fields]{a list of fields}
+      @dt[matches]{a hash-table containing the matches}
+      @dt[status]{the status returned by @code{searchd}}
+      @dt[status-message]{the status message returned by @code{searchd}}
+      @dt[time]{the time @code{searchd} took for the query}
+      @dt[total]{the total matches returned}
+      @dt[total-found]{the total number of matches found}
+      @dt[words]{a hash-table containing the matching words with their statistics}
+    @end{dl}
+
+    @see{query}
+    @see{add-query}
+
+"))
 
 (defmethod run-queries ((client sphinx-client))
   (assert (> (length (reqs client)) 0))
@@ -267,6 +381,39 @@ Returns sph.
               (setf *response-length* (length response))
               (%parse-response response (length (reqs client))))))))))
 
+
+(defgeneric add-query (client query &key index comment)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[query]{the query to run through @code{searchd}}
+    @arg[index]{the index to use; defaults to \"*\"}
+    @arg[comment]{a comment describing this query; default none}
+    @return{length of query queue}
+    @short{Add a query to a batch request.}
+
+    @begin{pre}
+    (add-query client \"test\")
+    (add-query client \"word\" :index \"*\")
+    (run-queries client)
+    @end{pre}
+
+    Add a query to the queue of batched queries.
+
+    Batch queries enable @code{searchd} to perform internal optimizations,
+    if possible; and reduce network connection overhead in all cases.
+
+    For instance, running exactly the same query with different
+    group-by settings will enable @code{searchd} to perform expensive
+    full-text search and ranking operation only once, but compute
+    multiple group-by results from its output.
+
+    It returns the new length of the query queue, which is also the index
+    of the newly added query in the queue.
+
+    @see{query}
+    @see{run-queries}
+
+"))
 
 (defmethod add-query ((client sphinx-client) query &key (index "*") (comment ""))
   (let ((req (concatenate 'string
@@ -324,7 +471,6 @@ Returns sph.
         (progn
           (sockets:send-to (%socket client)
                            (string-to-octets (pack "N" 1) :encoding :latin-1))
-          ;;(finish-output (%socket client))
           #+SPHINX-SEARCH-DEBUG (format t "recieved version number: ~a~%" v)
           (%socket client)))))
 
@@ -561,20 +707,21 @@ Returns sph.
 (defun %pack-overrides (overrides)
   (when (hash-table-p overrides)
     (maphash #'(lambda (k entry)
+                 (declare (ignore k))
                  (concatenate 'string
-                              (pack "N/a*" (get-hash 'attr entry))
-                              (pack "NN" (get-hash 'type entry) (hash-table-count (get-hash 'values entry)))
+                              (pack "N/a*" (gethash 'attr entry))
+                              (pack "NN" (gethash 'type entry) (hash-table-count (gethash 'values entry)))
                               (maphash #'(lambda (id v)
                                            (concatenate 'string
                                                         (assert (and (numberp id) (numberp v)))
                                                         (pack "Q>" id)
-                                                        (cond ((eql (get-hash 'type entry) +sph-attr-float+)
+                                                        (cond ((eql (gethash 'type entry) +sph-attr-float+)
                                                                (%pack-float v))
-                                                              ((eql (get-hash 'type entry) +sph-attr-bigint+)
+                                                              ((eql (gethash 'type entry) +sph-attr-bigint+)
                                                                (pack "q>" v))
                                                               (t
                                                                (pack "N" v)))))
-                                       (get-hash 'values entry))))
+                                       (gethash 'values entry))))
              overrides)))
 
 
@@ -587,16 +734,16 @@ Returns sph.
                                     (concatenate 'string
                                                  (pack "N" type)
                                                  (cond ((eql type +sph-filter-values+)
-                                                        (%pack-array-signed-quads (get-hash 'values filter)))
+                                                        (%pack-array-signed-quads (gethash 'values filter)))
                                                        ((eql type +sph-filter-range+)
-                                                        (concatenate 'string (pack "q>" (get-hash 'min filter))
-                                                                     (pack "q>" (get-hash 'max filter))))
+                                                        (concatenate 'string (pack "q>" (gethash 'min filter))
+                                                                     (pack "q>" (gethash 'max filter))))
                                                        ((eql type +sph-filter-floatrange+)
-                                                        (concatenate 'string (%pack-float (get-hash 'min filter))
-                                                                     (%pack-float (get-hash 'max filter))))
+                                                        (concatenate 'string (%pack-float (gethash 'min filter))
+                                                                     (%pack-float (gethash 'max filter))))
                                                        (t
                                                         (error "Unhandled filter type ~S" type)))
-                                                 (pack "N" (get-hash 'exclude filter)))))))
+                                                 (pack "N" (gethash 'exclude filter)))))))
        filters))
 
 
