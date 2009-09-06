@@ -14,6 +14,14 @@ documentation found in `doc/`), and most definitely **untested**. So
 use at your own risk.
 
 
+### SPHINX VERSION COMPATIBILITY
+
+This version of cl-sphinx-search is for Sphinx 0.9.9-rc2 and later.
+
+Please note that this version of cl-sphinx-search is guaranteed
+**not** to work with incompatible versions of Sphinx.
+
+
 ### ACKNOWLEDGEMENTS
 
 This port is based on Sphinx.pm version 0.22 (deployed to CPAN
