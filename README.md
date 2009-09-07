@@ -1,7 +1,7 @@
 Common Lisp Sphinx Search API client
 ===========
 
-See docs in `doc/`
+See docs in `doc/` or online [here](http://thijso.com/cl-spinx-search/doc/index.html).
 
 
 ### UNFINISHED & UNTESTED
