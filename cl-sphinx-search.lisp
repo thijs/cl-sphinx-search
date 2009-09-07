@@ -187,11 +187,11 @@
     then calling @fun{run-queries}.
 
     Either get a result hash or a list of result hashes back, or an error
-    that can be retrieved with the @fun{get-last-error} function.
+    that can be retrieved with the @fun{last-error} function.
 
     @see{set-server}
     @see{set-limits}
-    @see{get-last-warning}
+    @see{last-warning}
 "))
 
 
@@ -200,6 +200,24 @@
 
 (defmacro adv-p (n)
   `(setf p (+ p ,n)))
+
+
+(defgeneric last-error (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{a string; the last error message returned from the @code{searchd}}
+
+    Get the last error message sent by searchd
+"))
+
+
+(defgeneric last-warning (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{a string; the last warning message returned from the @code{searchd}}
+
+    Get the last warning message sent by searchd
+"))
 
 
 (defgeneric set-server (client &key host port path)
@@ -272,30 +290,6 @@
   (when (and cutoff (>= cutoff 0))
     (setf (cutoff client) cutoff))
   client)
-
-
-(defgeneric get-last-error (client)
-  (:documentation
-   "@arg[client]{a @class{sphinx-client}}
-    @return{a string; the last error message returned from the @code{searchd}}
-
-    Get the last error message sent by searchd
-"))
-
-(defmethod get-last-error ((client sphinx-client))
-  (last-error client))
-
-
-(defgeneric get-last-warning (client)
-  (:documentation
-   "@arg[client]{a @class{sphinx-client}}
-    @return{a string; the last warning message returned from the @code{searchd}}
-
-    Get the last warning message sent by searchd
-"))
-
-(defmethod get-last-warning ((client sphinx-client))
-  (last-warning client))
 
 
 (defgeneric query (client query &key index comment)
