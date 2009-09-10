@@ -4,6 +4,31 @@
 (in-package #:cl-sphinx-search)
 
 
+(defvar *response-length* ())
+
+
+(defmacro adv-p (n)
+  `(setf p (+ p ,n)))
+
+
+(defgeneric last-error (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{a string; the last error message returned from the @code{searchd}}
+
+    Get the last error message sent by searchd
+"))
+
+
+(defgeneric last-warning (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{a string; the last warning message returned from the @code{searchd}}
+
+    Get the last warning message sent by searchd
+"))
+
+
 (defclass sphinx-client ()
   ((%host
     :accessor %host
@@ -192,31 +217,6 @@
     @see{set-server}
     @see{set-limits}
     @see{last-warning}
-"))
-
-
-(defvar *response-length* ())
-
-
-(defmacro adv-p (n)
-  `(setf p (+ p ,n)))
-
-
-(defgeneric last-error (client)
-  (:documentation
-   "@arg[client]{a @class{sphinx-client}}
-    @return{a string; the last error message returned from the @code{searchd}}
-
-    Get the last error message sent by searchd
-"))
-
-
-(defgeneric last-warning (client)
-  (:documentation
-   "@arg[client]{a @class{sphinx-client}}
-    @return{a string; the last warning message returned from the @code{searchd}}
-
-    Get the last warning message sent by searchd
 "))
 
 
