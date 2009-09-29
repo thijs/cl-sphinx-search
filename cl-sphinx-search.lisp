@@ -84,11 +84,11 @@
     :initarg :limit
     :initform 20
     :documentation "how much records to return from result-set starting at offset (default is 20)")
-   (mode
-    :accessor mode
-    :initarg :mode
+   (match-mode
+    :accessor match-mode
+    :initarg :match-mode
     :initform +sph-match-all+
-    :documentation "query matching mode (default is +sph-match-all+)")
+    :documentation "query matching match-mode (default is +sph-match-all+)")
    (weights
     :accessor weights
     :initarg :weights
@@ -169,9 +169,9 @@
     :initarg :index-weights
     :initform (make-hash-table)
     :documentation "per-index weights")
-   (ranker
-    :accessor ranker
-    :initarg :ranker
+   (rank-mode
+    :accessor rank-mode
+    :initarg :rank-mode
     :initform +sph-rank-proximity-bm25+
     :documentation "ranking mode (default is +sph-rank-proximity-bm25+)")
    (max-query-time
@@ -310,6 +310,157 @@
     (setf (cutoff client) cutoff))
   client)
 
+(defgeneric set-id-range (client min max)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[min]{minimum id to start searching from}
+    @arg[max]{maximum id to stop searching at}
+    @return{client}
+    @short{Set the id-range to search within (inclusive).}
+
+    Set the range of id's within which to search. Range is inclusive, so setting
+    [0, 450] both 0 and 450 id's will be found.
+"))
+
+(defmethod set-id-range ((client sphinx-client) min max)
+  (assert (and (numberp min) (numberp max)
+               (>= max min)))
+  (setf (min-id client) min)
+  (setf (max-id client) max))
+
+
+(defgeneric set-filter (client attribute values-list &key exclude)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[attribute]{the attribute to filter on}
+    @arg[values-list]{the numeric values to filter on}
+    @arg[exclude]{if set, exclude the given values}
+    @return{client}
+    @short{Sets the results to be filtered on the given attribute.}
+
+    @begin{pre}
+    (set-filter client \"filter_attr\" '(0 2 4 34 55 77))
+    (set-filter client \"other_attr\" '(8 4 2 11) :exclude t)
+    @end{pre}
+
+    Sets the results to be filtered on the given attribute. Only
+    results which have attributes matching the given (numeric)
+    values will be returned.
+
+    This may be called multiple times with different attributes to
+    select on multiple attributes.
+
+    If @code{:exclude} is set, excludes results that match the filter.
+"))
+
+(defmethod set-filter ((client sphinx-client) attr values &key (exclude nil))
+  (assert (and (listp values) (> (length values) 0)))
+  (dolist (item values)
+    (assert (numberp item)))
+  (let ((filter (make-hash-table)))
+    (setf (gethash 'type filter) +sph-filter-values+)
+    (setf (gethash 'attr filter) attr)
+    (setf (gethash 'values filter) values)
+    (setf (gethash 'exclude filter) (cond (exclude 1)
+                                          (t 0)))
+    (push filter (filters client))
+    client))
+
+(defgeneric set-filter-range (client attribute min max &key exclude)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[attribute]{the attribute to filter on}
+    @arg[min]{start of the range to filter on}
+    @arg[max]{end of the range to filter on}
+    @arg[exclude]{if set, exclude the given range}
+    @return{client}
+    @short{Sets the results to be filtered on the given range.}
+
+    @begin{pre}
+    (set-filter-range client \"filter_attr\" 45 99)
+    (set-filter-range client \"other_attr\" 2 8 :exclude t)
+    @end{pre}
+
+    Sets the results to be filtered on a range of values for the given
+    attribute. Only those records where the attribute value is between
+    @code{min} and @code{max} (including @code{min} and @code{max})
+    will be returned.
+
+    This may be called multiple times with different attributes to
+    select on multiple attributes.
+
+    If @code{:exclude} is set, excludes results that fall within the
+    given range.
+"))
+
+(defmethod set-filter-range ((client sphinx-client) attr min max &key (exclude nil))
+  (%set-filter-range client +sph-filter-range+ attr min max :exclude exclude))
+
+;;   (assert (and (numberp min) (numberp max) (>= max min)))
+;;   (let ((filter (make-hash-table)))
+;;     (setf (gethash 'type filter) +sph-filter-range+)
+;;     (setf (gethash 'attr filter) attr)
+;;     (setf (gethash 'min filter) min)
+;;     (setf (gethash 'max filter) max)
+;;     (setf (gethash 'exclude filter) (cond (exclude 1)
+;;                                           (t 0)))
+;;     (push filter (filters client))
+;;     client))
+
+(defgeneric set-filter-float-range (client attribute min max &key exclude)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[attribute]{the attribute to filter on}
+    @arg[min]{start of the range to filter on}
+    @arg[max]{end of the range to filter on}
+    @arg[exclude]{if set, exclude the given range}
+    @return{client}
+    @short{Sets the results to be filtered on the given range.}
+
+    @begin{pre}
+    (set-filter-float-range client \"filter_attr\" 45.231 99)
+    (set-filter-float-range client \"other_attr\" 1.32 55.0031 :exclude t)
+    @end{pre}
+
+    Sets the results to be filtered on a range of values for the given
+    attribute. Only those records where the attribute value is between
+    @code{min} and @code{max} (including @code{min} and @code{max})
+    will be returned.
+
+    This may be called multiple times with different attributes to
+    select on multiple attributes.
+
+    If @code{:exclude} is set, excludes results that fall within the
+    given range.
+"))
+
+(defmethod set-filter-float-range ((client sphinx-client) attr min max &key (exclude nil))
+  (%set-filter-range client +sph-filter-floatrange+ attr min max :exclude exclude))
+
+(defmethod %set-filter-range ((client sphinx-client) type attr min max &key (exclude nil))
+  (assert (and (numberp min) (numberp max) (>= max min)))
+  (let ((filter (make-hash-table)))
+    (setf (gethash 'type filter) type)
+    (setf (gethash 'attr filter) attr)
+    (setf (gethash 'min filter) min)
+    (setf (gethash 'max filter) max)
+    (setf (gethash 'exclude filter) (cond (exclude 1)
+                                          (t 0)))
+    (push filter (filters client))
+    client))
+
+;; (defgeneric (client )
+;;   (:documentation
+;;    "@arg[client]{a @class{sphinx-client}}
+;;     @arg[]{}
+;;     @return{}
+;;     @short{.}
+
+;;     .
+;; "))
+
+;; (defmethod ((client sphinx-client) )
+;; )
 
 (defgeneric query (client query &key index comment)
   (:documentation
@@ -441,7 +592,7 @@
 
 (defmethod add-query ((client sphinx-client) query &key (index "*") (comment ""))
   (let ((req (concatenate 'string
-                          (pack "NNNNN" (offset client) (limit client) (mode client) (ranker client) (sort-mode client))
+                          (pack "NNNNN" (offset client) (limit client) (match-mode client) (rank-mode client) (sort-mode client))
                           (pack "N/a*" (sort-by client))
                           (pack "N/a*" (octets-to-string (string-to-octets query :encoding (%encoding client)) :encoding :latin-1))
                           (pack "N*" (length (weights client)) (weights client))
@@ -759,7 +910,7 @@
                                     (concatenate 'string
                                                  (pack "N" type)
                                                  (cond ((eql type +sph-filter-values+)
-                                                        (%pack-array-signed-quads (gethash 'values filter)))
+                                                        (%pack-list-signed-quads (gethash 'values filter)))
                                                        ((eql type +sph-filter-range+)
                                                         (concatenate 'string (pack "q>" (gethash 'min filter))
                                                                      (pack "q>" (gethash 'max filter))))
@@ -781,7 +932,7 @@
                           hash-table))))
 
 
-(defun %pack-array-signed-quads (values-list)
+(defun %pack-list-signed-quads (values-list)
   (concatenate 'string
                (pack "N" (length values-list))
                (map 'string #'(lambda (value)
