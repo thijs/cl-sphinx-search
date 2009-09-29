@@ -1,0 +1,17 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Function set-filter</title><link rel="stylesheet" type="text/css" href="../index.css"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><div id="header"><table cellspacing="0" cellpadding="0" width="100%"><tr><td valign="center">
+		  
+	      <b> Common Lisp Sphinx Search API</b></td><td valign="center" align="right"><b>API documentation</b></td></tr></table></div><div class="main"><div class="padded"><p class="noindent">
+	  Package:
+	  <a href="cl-sphinx-search.html">cl-sphinx-search</a></p><h2 class="page-title">
+	  Function
+	  set-filter</h2></div><table cellspacing="0" cellpadding="0" width="100%"><tr><td valign="top" width="60%"><div class="padded"><h3>Lambda List</h3><div class="indent"><tt>set-filter</tt> (<b>client</b> <b>attribute</b> <b>values-list</b> <b>&amp;key</b> <b>exclude</b>)</div><h3>Arguments</h3><div class="indent"><ul><li><tt>client</tt> -- a <a href="cl-sphinx-search__class__sphinx-client.html"><tt>sphinx-client</tt></a></li><li><tt>attribute</tt> -- the attribute to filter on</li><li><tt>values-list</tt> -- the numeric values to filter on</li><li><tt>exclude</tt> -- if set, exclude the given values</li></ul></div><h3>Return Value</h3><div class="indent">client</div><h3>Details<a name="details"></a></h3><div class="indent">                    Sets the results to be filtered on the given attribute.<br><br>    <pre>
+    (set-filter client &quot;filter_attr&quot; '(0 2 4 34 55 77))
+    (set-filter client &quot;other_attr&quot; '(8 4 2 11) :exclude t)    </pre><br><br>
+    Sets the results to be filtered on the given attribute. Only
+    results which have attributes matching the given (numeric)
+    values will be returned.<br><br>
+    This may be called multiple times with different attributes to
+    select on multiple attributes.<br><br>    If <tt>:exclude</tt> is set, excludes results that match the filter.</div></div></td><td valign="top" width="5%">
+	     
+	  </td><td valign="top" width="35%"><h3>See also</h3><div class="indent"><table cellspacing="0" cellpadding="0"><tr><td><a href="cl-sphinx-search__class__sphinx-client.html"><tt>sphinx-client</tt></a></td></tr></table></div></td></tr></table></div></body></html>

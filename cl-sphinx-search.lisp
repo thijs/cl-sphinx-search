@@ -235,7 +235,16 @@
 
     @see{set-server}
     @see{set-limits}
+    @see{query}
+    @see{add-query}
+    @see{run-queries}
+    @see{last-error}
     @see{last-warning}
+    @see{set-id-range}
+    @see{set-filter}
+    @see{set-filter-range}
+    @see{set-filter-float-range}
+    @see{max-query-time}
 "))
 
 

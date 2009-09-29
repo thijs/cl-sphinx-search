@@ -14,6 +14,9 @@
            #:last-error
            #:last-warning
            #:set-id-range
+           #:set-filter
+           #:set-filter-range
+           #:set-filter-float-range
            #:max-query-time)
   (:documentation
    "This package provides an interface to the search daemon (@em{searchd})
