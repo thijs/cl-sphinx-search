@@ -14,18 +14,37 @@
 (defgeneric last-error (client)
   (:documentation
    "@arg[client]{a @class{sphinx-client}}
-    @return{a string; the last error message returned from the @code{searchd}}
+    @return{a string; the last error message returned from the @code{searchd}.}
 
-    Get the last error message sent by searchd
+    Get the last error message sent by searchd.
 "))
 
 
 (defgeneric last-warning (client)
   (:documentation
    "@arg[client]{a @class{sphinx-client}}
-    @return{a string; the last warning message returned from the @code{searchd}}
+    @return{a string; the last warning message returned from the @code{searchd}.}
 
-    Get the last warning message sent by searchd
+    Get the last warning message sent by searchd.
+"))
+
+
+(defgeneric max-query-time (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{a number; the max query time in milliseconds.}
+
+    Get the max query time.
+"))
+
+
+(defgeneric (setf max-query-time) (max-time client)
+  (:documentation
+   "@arg[max-time]{the max query time in milliseconds Sphinx is allowed to take}
+    @arg[client]{a @class{sphinx-client}}
+    @return{a number; the max query time in milliseconds.}
+
+    Set the max query time to max-time in milliseconds.
 "))
 
 

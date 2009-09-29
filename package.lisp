@@ -12,7 +12,8 @@
            #:add-query
            #:run-queries
            #:last-error
-           #:last-warning)
+           #:last-warning
+           #:max-query-time)
   (:documentation
    "This package provides an interface to the search daemon (@em{searchd})
     for @a[http://www.sphinxsearch.com/]{Sphinx}.
