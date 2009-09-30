@@ -924,7 +924,7 @@
     (dolist (filter filters)
       (let ((type (first filter))
             (attr (second filter)))
-        (concatenate 'string
+        (format packed-filters "~a~a~a~a"
                      (pack "N/a*" attr)
                      (pack "N" type)
                      (cond ((eql type +sph-filter-values+)
