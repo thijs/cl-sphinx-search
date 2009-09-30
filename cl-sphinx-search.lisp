@@ -118,7 +118,7 @@
     :accessor filters
     :initarg :filters
     :initform ()
-    :documentation "search filters; a list of hashes")
+    :documentation "search filters; a list of lists")
    (group-by
     :accessor group-by
     :initarg :group-by
@@ -366,14 +366,18 @@
   (assert (and (listp values) (> (length values) 0)))
   (dolist (item values)
     (assert (numberp item)))
-  (let ((filter (make-hash-table)))
-    (setf (gethash 'type filter) +sph-filter-values+)
-    (setf (gethash 'attr filter) attr)
-    (setf (gethash 'values filter) values)
-    (setf (gethash 'exclude filter) (cond (exclude 1)
-                                          (t 0)))
-    (push filter (filters client))
-    client))
+  (push '(+sph-filter-values+ attr values (cond (exclude 1) (t 0))) (filters client))
+  client)
+
+
+;;   (let ((filter (make-hash-table)))
+;;     (setf (gethash 'type filter) +sph-filter-values+)
+;;     (setf (gethash 'attr filter) attr)
+;;     (setf (gethash 'values filter) values)
+;;     (setf (gethash 'exclude filter) (cond (exclude 1)
+;;                                           (t 0)))
+;;     (push filter (filters client))
+;;     client))
 
 (defgeneric set-filter-range (client attribute min max &key exclude)
   (:documentation
@@ -448,15 +452,18 @@
 
 (defmethod %set-filter-range ((client sphinx-client) type attr min max &key (exclude nil))
   (assert (and (numberp min) (numberp max) (>= max min)))
-  (let ((filter (make-hash-table)))
-    (setf (gethash 'type filter) type)
-    (setf (gethash 'attr filter) attr)
-    (setf (gethash 'min filter) min)
-    (setf (gethash 'max filter) max)
-    (setf (gethash 'exclude filter) (cond (exclude 1)
-                                          (t 0)))
-    (push filter (filters client))
-    client))
+  (push '(type attr min max (cond (exclude 1) (t 0))) (filters client))
+  client)
+
+;;   (let ((filter (make-hash-table)))
+;;     (setf (gethash 'type filter) type)
+;;     (setf (gethash 'attr filter) attr)
+;;     (setf (gethash 'min filter) min)
+;;     (setf (gethash 'max filter) max)
+;;     (setf (gethash 'exclude filter) (cond (exclude 1)
+;;                                           (t 0)))
+;;     (push filter (filters client))
+;;     client))
 
 ;; (defgeneric (client )
 ;;   (:documentation
@@ -912,6 +919,14 @@
 
 (defun %pack-filters (filters)
   (map 'string #'(lambda (filter)
+                   (let ((type (first filter))
+                         (attr (second filter)))
+                     (concatenate 'string
+                                  (pack "N/a*" attr)
+                                  (pack "N" type)
+                                  (cond
+
+
                    (when (hash-table-p filter)
                      (concatenate 'string
                                   (pack "N/a*" (gethash 'attr filter))
