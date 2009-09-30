@@ -920,34 +920,26 @@
 
 
 (defun %pack-filters (filters)
-  (map 'string #'(lambda (filter)
-                   (let ((type (first filter))
-                         (attr (second filter)))
-                     (concatenate 'string
-                                  (pack "N/a*" attr)
-                                  (pack "N" type)
-                                  (cond ((eql type +sph-filter-values+)
-                                         (%pack-list-signed-quads (third filter)))
-                                        ((eql type +sph-filter-range+)
-                                         (concatenate 'string
-                                                      (pack "q>" (third filter))
-                                                      (pack "q>" (fourth filter))))
-                                        ((eql type +sph-filter-floatrange+)
-                                         (concatenate 'string
-                                                      (%pack-float (third filter))
-                                                      (%pack-float (fourth filter))))
-                                        (t
-                                         (error "Unhandled filter type ~S" type)))
-                                  (pack "N" (last filter)))))
-       filters))
-
-
-;;                    (when (hash-table-p filter)
-;;                      (concatenate 'string
-;;                                   (pack "N/a*" (gethash 'attr filter))
-;;                                   (let ((type (gethash 'type filter)))
-;;                                     (concatenate 'string
-;;                                                  (pack "N" type)
+  (with-output-to-string (packed-filters)
+    (dolist (filter filters)
+      (let ((type (first filter))
+            (attr (second filter)))
+        (concatenate 'string
+                     (pack "N/a*" attr)
+                     (pack "N" type)
+                     (cond ((eql type +sph-filter-values+)
+                            (%pack-list-signed-quads (third filter)))
+                           ((eql type +sph-filter-range+)
+                            (concatenate 'string
+                                         (pack "q>" (third filter))
+                                         (pack "q>" (fourth filter))))
+                           ((eql type +sph-filter-floatrange+)
+                            (concatenate 'string
+                                         (%pack-float (third filter))
+                                         (%pack-float (fourth filter))))
+                           (t
+                            (error "Unhandled filter type ~S" type)))
+                     (pack "N" (last filter)))))))
 
 
 (defun %pack-hash (hash-table)
@@ -960,10 +952,10 @@
 
 
 (defun %pack-list-signed-quads (values-list)
-  (concatenate 'string
-               (pack "N" (length values-list))
-               (map 'string #'(lambda (value)
-                                (pack "q>" value)) values-list)))
+  (with-output-to-string (packed-list)
+    (format packed-list "~a" (pack "N" (length values-list)))
+    (dolist (value values-list)
+      (format packed-list "~a" (pack "q>" value)))))
 
 
 (defun %pack-float (float-value)
