@@ -3,11 +3,10 @@
 
 (in-package #:cl-sphinx-search)
 
+
 (declaim (optimize (debug 3) (safety 3) (speed 0) (space 0)))
 
-
 (defvar *response-length* ())
-
 
 (defmacro adv-p (n)
   `(setf p (+ p ,n)))
@@ -364,7 +363,7 @@
     If @code{:exclude} is set, excludes results that match the filter.
 "))
 
-(defmethod set-filter ((client sphinx-client) attr values &key (exclude nil))
+(defmethod set-filter ((client sphinx-client) attr values &key (exclude ()))
   (assert (and (listp values) (> (length values) 0)))
   (dolist (item values)
     (assert (numberp item)))
@@ -408,7 +407,7 @@
     given range.
 "))
 
-(defmethod set-filter-range ((client sphinx-client) attr min max &key (exclude nil))
+(defmethod set-filter-range ((client sphinx-client) attr min max &key (exclude ()))
   (%set-filter-range client +sph-filter-range+ attr min max :exclude exclude))
 
 ;;   (assert (and (numberp min) (numberp max) (>= max min)))
@@ -449,10 +448,10 @@
     given range.
 "))
 
-(defmethod set-filter-float-range ((client sphinx-client) attr min max &key (exclude nil))
+(defmethod set-filter-float-range ((client sphinx-client) attr min max &key (exclude ()))
   (%set-filter-range client +sph-filter-floatrange+ attr min max :exclude exclude))
 
-(defmethod %set-filter-range ((client sphinx-client) type attr min max &key (exclude nil))
+(defmethod %set-filter-range ((client sphinx-client) type attr min max &key (exclude ()))
   (assert (and (numberp min) (numberp max) (>= max min)))
   (push `(,type ,attr ,min ,max ,(cond (exclude 1) (t 0))) (filters client))
   client)
@@ -628,7 +627,7 @@
                                               (pack "N/a*" (first (anchor client)))
                                               (pack "N/a*" (third (anchor client)))
                                               (%pack-float (second (anchor client)))
-                                              (%pack-float (last (anchor client)))))
+                                              (%pack-float (fourth (anchor client)))))
                                 (t
                                  (pack "N" 0)))
                           (%pack-hash (index-weights client))
@@ -646,6 +645,7 @@
 
 
 (defmethod %connect ((client sphinx-client))
+  #+SPHINX-SEARCH-DEBUG (format t "socket is: ~a~%" (%socket client))
   (cond ((%socket client))
         ((%path client)
          (setf (%socket client)
@@ -697,6 +697,7 @@
                  (setf left (- left (length chunk))))
                (return))))
       (close (%socket client))
+      (setf (%socket client) ())
       (let ((done (length response)))
         #+SPHINX-SEARCH-DEBUG (format t "got response of length: ~a~%raw response: ~a~%" done response)
         (cond ((or (not response)
@@ -923,23 +924,26 @@
   (with-output-to-string (packed-filters)
     (dolist (filter filters)
       (let ((type (first filter))
-            (attr (second filter)))
+            (attr (second filter))
+            (last-el 3))
         (format packed-filters "~a~a~a~a"
-                     (pack "N/a*" attr)
-                     (pack "N" type)
-                     (cond ((eql type +sph-filter-values+)
-                            (%pack-list-signed-quads (third filter)))
-                           ((eql type +sph-filter-range+)
-                            (concatenate 'string
-                                         (pack "q>" (third filter))
-                                         (pack "q>" (fourth filter))))
-                           ((eql type +sph-filter-floatrange+)
-                            (concatenate 'string
-                                         (%pack-float (third filter))
-                                         (%pack-float (fourth filter))))
-                           (t
-                            (error "Unhandled filter type ~S" type)))
-                     (pack "N" (last filter)))))))
+                (pack "N/a*" attr)
+                (pack "N" type)
+                (cond ((eql type +sph-filter-values+)
+                       (%pack-list-signed-quads (third filter)))
+                      ((eql type +sph-filter-range+)
+                       (concatenate 'string
+                                    (pack "q>" (third filter))
+                                    (pack "q>" (fourth filter)))
+                       (incf last-el))
+                      ((eql type +sph-filter-floatrange+)
+                       (concatenate 'string
+                                    (%pack-float (third filter))
+                                    (%pack-float (fourth filter)))
+                       (incf last-el))
+                      (t
+                       (error "Unhandled filter type ~S" type)))
+                (pack "N" (nth last-el filter)))))))
 
 
 (defun %pack-hash (hash-table)
