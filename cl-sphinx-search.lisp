@@ -3,6 +3,8 @@
 
 (in-package #:cl-sphinx-search)
 
+(declaim (optimize (debug 3) (safety 3) (speed 0) (space 0)))
+
 
 (defvar *response-length* ())
 
@@ -366,7 +368,7 @@
   (assert (and (listp values) (> (length values) 0)))
   (dolist (item values)
     (assert (numberp item)))
-  (push '(+sph-filter-values+ attr values (cond (exclude 1) (t 0))) (filters client))
+  (push `(,+sph-filter-values+ ,attr ,values ,(cond (exclude 1) (t 0))) (filters client))
   client)
 
 
@@ -452,7 +454,7 @@
 
 (defmethod %set-filter-range ((client sphinx-client) type attr min max &key (exclude nil))
   (assert (and (numberp min) (numberp max) (>= max min)))
-  (push '(type attr min max (cond (exclude 1) (t 0))) (filters client))
+  (push `(,type ,attr ,min ,max ,(cond (exclude 1) (t 0))) (filters client))
   client)
 
 ;;   (let ((filter (make-hash-table)))
@@ -924,27 +926,28 @@
                      (concatenate 'string
                                   (pack "N/a*" attr)
                                   (pack "N" type)
-                                  (cond
-
-
-                   (when (hash-table-p filter)
-                     (concatenate 'string
-                                  (pack "N/a*" (gethash 'attr filter))
-                                  (let ((type (gethash 'type filter)))
-                                    (concatenate 'string
-                                                 (pack "N" type)
-                                                 (cond ((eql type +sph-filter-values+)
-                                                        (%pack-list-signed-quads (gethash 'values filter)))
-                                                       ((eql type +sph-filter-range+)
-                                                        (concatenate 'string (pack "q>" (gethash 'min filter))
-                                                                     (pack "q>" (gethash 'max filter))))
-                                                       ((eql type +sph-filter-floatrange+)
-                                                        (concatenate 'string (%pack-float (gethash 'min filter))
-                                                                     (%pack-float (gethash 'max filter))))
-                                                       (t
-                                                        (error "Unhandled filter type ~S" type)))
-                                                 (pack "N" (gethash 'exclude filter)))))))
+                                  (cond ((eql type +sph-filter-values+)
+                                         (%pack-list-signed-quads (third filter)))
+                                        ((eql type +sph-filter-range+)
+                                         (concatenate 'string
+                                                      (pack "q>" (third filter))
+                                                      (pack "q>" (fourth filter))))
+                                        ((eql type +sph-filter-floatrange+)
+                                         (concatenate 'string
+                                                      (%pack-float (third filter))
+                                                      (%pack-float (fourth filter))))
+                                        (t
+                                         (error "Unhandled filter type ~S" type)))
+                                  (pack "N" (last filter)))))
        filters))
+
+
+;;                    (when (hash-table-p filter)
+;;                      (concatenate 'string
+;;                                   (pack "N/a*" (gethash 'attr filter))
+;;                                   (let ((type (gethash 'type filter)))
+;;                                     (concatenate 'string
+;;                                                  (pack "N" type)
 
 
 (defun %pack-hash (hash-table)
