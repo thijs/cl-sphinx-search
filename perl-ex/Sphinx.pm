@@ -2019,23 +2019,23 @@ sub UpdateAttributes  {
 
   Returns 1 on success, 0 on failure.
 
-  =cut
+=cut
 
-  sub Open {
-      my $self = shift;
+sub Open {
+    my $self = shift;
 
-      if ($self->{_socket}) {
-          $self->_Error("already connected");
-          return 0;
-      }
-      my $fp = $self->_Connect() or return 0;
+    if ($self->{_socket}) {
+        $self->_Error("already connected");
+        return 0;
+    }
+    my $fp = $self->_Connect() or return 0;
 
-      my $req = pack("nnNN", SEARCHD_COMMAND_PERSIST, 0, 4, 1);
-      $self->_Send($fp, $req) or return 0;
+    my $req = pack("nnNN", SEARCHD_COMMAND_PERSIST, 0, 4, 1);
+    $self->_Send($fp, $req) or return 0;
 
-      $self->{_socket} = $fp;
-      return 1;
-  }
+    $self->{_socket} = $fp;
+    return 1;
+}
 
 =head2 Close
 

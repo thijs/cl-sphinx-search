@@ -95,3 +95,10 @@
 (defconstant +sph-groupby-attr+ 4)
 (defconstant +sph-groupby-attrpair+ 5)
 
+(define-constant +sph-sort-functions+ (list +sph-groupby-day+
+                                            +sph-groupby-week+
+                                            +sph-groupby-month+
+                                            +sph-groupby-year+
+                                            +sph-groupby-attr+
+                                            +sph-groupby-attrpair+))
+

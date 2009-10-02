@@ -17,7 +17,14 @@
            #:set-filter
            #:set-filter-range
            #:set-filter-float-range
-           #:max-query-time)
+           #:max-query-time
+           #:set-geo-anchor
+           #:set-group-by
+           #:set-group-distinct
+           #:set-select
+           #:reset-filters
+           #:reset-group-by
+           #:reset-overrides)
   (:documentation
    "This package provides an interface to the search daemon (@em{searchd})
     for @a[http://www.sphinxsearch.com/]{Sphinx}.
@@ -94,7 +101,4 @@
 
 
     @end{section}
-
-
 "))
-

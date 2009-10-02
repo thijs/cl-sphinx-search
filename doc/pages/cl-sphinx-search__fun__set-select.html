@@ -1,0 +1,29 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Function set-select</title><link rel="stylesheet" type="text/css" href="../index.css"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><div id="header"><table cellspacing="0" cellpadding="0" width="100%"><tr><td valign="center">
+		  
+	      <b> Common Lisp Sphinx Search API</b></td><td valign="center" align="right"><b>API documentation</b></td></tr></table></div><div class="main"><div class="padded"><p class="noindent">
+	  Package:
+	  <a href="cl-sphinx-search.html">cl-sphinx-search</a></p><h2 class="page-title">
+	  Function
+	  set-select</h2></div><table cellspacing="0" cellpadding="0" width="100%"><tr><td valign="top" width="60%"><div class="padded"><h3>Lambda List</h3><div class="indent"><tt>set-select</tt> (<b>client</b> <b>select</b>)</div><h3>Arguments</h3><div class="indent"><ul><li><tt>client</tt> -- a <a href="cl-sphinx-search__class__sphinx-client.html"><tt>sphinx-client</tt></a></li><li><tt>select</tt> -- the select string</li></ul></div><h3>Return Value</h3><div class="indent">client</div><h3>Details<a name="details"></a></h3><div class="indent">            Set the select clause.<br><br>
+    Sets the select clause, listing specific attributes to fetch, and
+    expressions to compute and fetch. Clause syntax mimics SQL.<br><br>
+    The select clause is very similar to the part of a typical SQL query    between <tt>SELECT</tt> and <tt>FROM</tt>. It lets you choose what
+    attributes (columns) to fetch, and also what expressions over the
+    columns to compute and fetch. A difference from SQL is that expressions
+    must always be aliased to a correct identifier (consisting of letters
+    and digits) using the 'AS' keyword. Sphinx enforces aliases so that the
+    computation results can be returned under a 'normal' name in the result
+    set, used in other clauses, etc.<br><br>
+    Everything else is basically identical to SQL. Star ('*') is supported.
+    Functions are supported. Arbitrary amount of expressions is supported.
+    Computed expressions can be used for sorting, filtering, and grouping,
+    just as the regular attributes.<br><br>
+    Aggregate functions (AVG(), MIN(), MAX(), SUM()) are supported when
+    using GROUP BY.<br><br>
+    Examples:<br><br>    <pre>
+      (set-select sph &quot;*, (user_karma+ln(pageviews))*0.1 AS myweight&quot; )
+      (set-select sph &quot;exp_years, salary_gbp*{$gbp_usd_rate} AS salary_usd, IF(age&gt;40,1,0) AS over40&quot; )
+      (set-select sph &quot;*, AVG(price) AS avgprice&quot; )    </pre></div></div></td><td valign="top" width="5%">
+	     
+	  </td><td valign="top" width="35%"><h3>See also</h3><div class="indent"><table cellspacing="0" cellpadding="0"><tr><td><a href="cl-sphinx-search__class__sphinx-client.html"><tt>sphinx-client</tt></a></td></tr></table></div></td></tr></table></div></body></html>

@@ -160,9 +160,9 @@
     :initarg :retry-delay
     :initform 0
     :documentation "distributed retry delay")
-   (anchor
-    :accessor anchor
-    :initarg :anchor
+   (geo-anchor
+    :accessor geo-anchor
+    :initarg :geo-anchor
     :initform ()
     :documentation "geographical anchor point; fixed length list with '(attrlat lat attrlon lon)")
    (index-weights
@@ -188,8 +188,8 @@
    (overrides
     :accessor overrides
     :initarg :overrides
-    :initform (make-hash-table)
-    :documentation "per-query attribute values overrides")
+    :initform ()
+    :documentation "per-query attribute value overrides")
    (select
     :accessor select
     :initarg :select
@@ -371,15 +371,6 @@
   client)
 
 
-;;   (let ((filter (make-hash-table)))
-;;     (setf (gethash 'type filter) +sph-filter-values+)
-;;     (setf (gethash 'attr filter) attr)
-;;     (setf (gethash 'values filter) values)
-;;     (setf (gethash 'exclude filter) (cond (exclude 1)
-;;                                           (t 0)))
-;;     (push filter (filters client))
-;;     client))
-
 (defgeneric set-filter-range (client attribute min max &key exclude)
   (:documentation
    "@arg[client]{a @class{sphinx-client}}
@@ -410,16 +401,6 @@
 (defmethod set-filter-range ((client sphinx-client) attr min max &key (exclude ()))
   (%set-filter-range client +sph-filter-range+ attr min max :exclude exclude))
 
-;;   (assert (and (numberp min) (numberp max) (>= max min)))
-;;   (let ((filter (make-hash-table)))
-;;     (setf (gethash 'type filter) +sph-filter-range+)
-;;     (setf (gethash 'attr filter) attr)
-;;     (setf (gethash 'min filter) min)
-;;     (setf (gethash 'max filter) max)
-;;     (setf (gethash 'exclude filter) (cond (exclude 1)
-;;                                           (t 0)))
-;;     (push filter (filters client))
-;;     client))
 
 (defgeneric set-filter-float-range (client attribute min max &key exclude)
   (:documentation
@@ -456,28 +437,249 @@
   (push `(,type ,attr ,min ,max ,(cond (exclude 1) (t 0))) (filters client))
   client)
 
-;;   (let ((filter (make-hash-table)))
-;;     (setf (gethash 'type filter) type)
-;;     (setf (gethash 'attr filter) attr)
-;;     (setf (gethash 'min filter) min)
-;;     (setf (gethash 'max filter) max)
-;;     (setf (gethash 'exclude filter) (cond (exclude 1)
-;;                                           (t 0)))
-;;     (push filter (filters client))
-;;     client))
 
-;; (defgeneric (client )
-;;   (:documentation
-;;    "@arg[client]{a @class{sphinx-client}}
-;;     @arg[]{}
-;;     @return{}
-;;     @short{.}
+(defgeneric set-geo-anchor (client latitude-attribute latitude longitude-attribute longitude)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[latitude-attribute]{the latitude attribute name}
+    @arg[latitude]{latitude in radians}
+    @arg[longitude-attribute]{the longitude attribute name}
+    @arg[longitude]{longitude in radians}
+    @return{client}
+    @short{Setup anchor point for geolocation.}
 
-;;     .
-;; "))
+    @begin{pre}
+    (set-geo-anchor client \"latitude_attr\" 45.231 \"longitude_attribute\" 4.5)
+    @end{pre}
 
-;; (defmethod ((client sphinx-client) )
-;; )
+    Setup anchor point for using geosphere distance calculations in
+    filters and sorting. Distance will be computed with respect to
+    this point, and will be included in result output.
+
+    To actually use this to filter on results a certain distance from
+    the anchor point, use something like:
+
+    @begin{pre}
+    (set-filter-float-range sph \"geodist\" 0 5000)
+    @end{pre}
+
+    This will filter the results to be closer than 5 km from the anchor
+    point.
+"))
+
+(defmethod set-geo-anchor ((client sphinx-client) lat-attr lat lon-attr lon)
+  (assert (and (stringp lat-attr) (stringp lon-attr) (numberp lat) (numberp lon)))
+  (setf (geo-anchor client) (list lat-attr lat lon-attr lon))
+  client)
+
+
+(defgeneric set-group-by (client attribute function &optional group-sort)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[attribute]{the attribute name to group by}
+    @arg[function]{the grouping function to use}
+    @arg[group-sort]{the sorting clause for group-by}
+    @return{client}
+    @short{Set grouping options.}
+
+    @begin{pre}
+    (set-group-by client \"whatever_attr\" +sph-groupby-attr+ \"group asc\")
+    (set-group-by client \"date_attr\" +sph-groupby-day+)
+    @end{pre}
+
+    Sets attribute and function of results grouping.
+
+    In grouping mode, all matches are assigned to different groups based on
+    grouping function value. Each group keeps track of the total match
+    count, and the best match (in this group) according to current sorting
+    function. The final result set contains one best match per group, with
+    grouping function value and matches count attached.
+
+    @code{attribute} is any valid attribute. Use @fun{reset-group-by}
+    to disable grouping.
+
+    @code{function} is one of:
+
+    @begin{dl}
+      @dt[+sph-groupby-day+]{Group by day (assumes timestamp type attribute
+      of form YYYYMMDD)}
+      @dt[+sph-groupby-week+]{Group by week (assumes timestamp type attribute
+      of form YYYYNNN)}
+      @dt[+sph-groupby-month+]{Group by month (assumes timestamp type
+      attribute of form YYYYMM)}
+      @dt[+sph-groupby-year+]{Group by year (assumes timestamp type attribute
+      of form YYYY)}
+      @dt[+sph-groupby-attr+]{Group by attribute value}
+      @dt[+sph-groupby-attrpair+]{Group by two attributes, being the given
+      attribute and the attribute that immediately follows it in the sequence
+      of indexed attributes. The specified attribute may therefore not be the
+      last of the indexed attributes}
+    @end{dl}
+
+    Groups in the set of results can be sorted by any SQL-like sorting clause,
+    including both document attributes and the following special internal
+    Sphinx attributes:
+
+    @begin{dl}
+      @dt[id]{document ID}
+      @dt[weight, rank, relevance]{match weight}
+      @dt[group]{group by function value}
+      @dt[count]{number of matches in group}
+    @end{dl}
+
+    The default mode is to sort by group-by value in descending order,
+    ie. by \"group desc\".
+
+    In the results set, @code{total-found} contains the total amount of
+    matching groups over the whole index.
+
+    WARNING: grouping is done in fixed memory and thus its results
+    are only approximate; so there might be more groups reported
+    in @code{total-found} than actually present. @code{count} might
+    also be underestimated.
+
+    For example, if sorting by relevance and grouping by a \"published\"
+    attribute with +sph-groupby-day+ function, then the result set will
+    contain only the most relevant match for each day when there were any
+    matches published, with day number and per-day match count attached,
+    and sorted by day number in descending order (ie. recent days first).
+"))
+
+(defmethod set-group-by ((client sphinx-client) attr func &optional sort)
+  (assert (and (stringp attr) (stringp sort) (find func +sph-sort-functions+)))
+  (setf (group-by client) attr)
+  (setf (group-function client) func)
+  (setf (group-sort client) sort)
+  client)
+
+
+(defgeneric set-group-distinct (client attribute)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[attribute]{the attribute to use for count-distinct queries}
+    @return{client}
+    @short{Set count-distinct attribute for group-by queries.}
+"))
+
+(defmethod set-group-distinct ((client sphinx-client) attribute)
+  (assert (stringp attribute))
+  (setf (group-distinct client) attribute)
+  client)
+
+
+(defgeneric set-override (client attribute type values)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[attribute]{the attribute to override}
+    @arg[type]{the attribute type as defined in Sphinx config}
+    @arg[values]{an alist mapping document IDs to attribute values}
+    @return{client}
+    @short{Set attribute values overrides.}
+
+    There can be only one override per attribute.
+
+    @code{values} must be an alist that maps document IDs to attribute
+    values.
+
+    @begin{pre}
+    (set-override client \"test_attr\" +sph-attr-integer+ '((4314 . 3) (2443 . 2)))
+    @end{pre}
+
+    In the example above, for the document with ID 4314, Sphinx will see an
+    attribute value for the @code{attribute} called 'test_attr' of 3. And
+    for the document with ID 2443 it will see 2, while the rest will be what
+    it was when the indexer was last run.
+"))
+
+(defmethod set-override ((client sphinx-client) attribute type values)
+  (assert (and (stringp attribute) (find type +sph-attr-types+) (listp values)))
+  (push (cons attribute values) (overrides client))
+  client)
+
+
+(defgeneric set-select (client select)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @arg[select]{the select string}
+    @return{client}
+    @short{Set the select clause.}
+
+    Sets the select clause, listing specific attributes to fetch, and
+    expressions to compute and fetch. Clause syntax mimics SQL.
+
+    The select clause is very similar to the part of a typical SQL query
+    between @code{SELECT} and @code{FROM}. It lets you choose what
+    attributes (columns) to fetch, and also what expressions over the
+    columns to compute and fetch. A difference from SQL is that expressions
+    must always be aliased to a correct identifier (consisting of letters
+    and digits) using the 'AS' keyword. Sphinx enforces aliases so that the
+    computation results can be returned under a 'normal' name in the result
+    set, used in other clauses, etc.
+
+    Everything else is basically identical to SQL. Star ('*') is supported.
+    Functions are supported. Arbitrary amount of expressions is supported.
+    Computed expressions can be used for sorting, filtering, and grouping,
+    just as the regular attributes.
+
+    Aggregate functions (AVG(), MIN(), MAX(), SUM()) are supported when
+    using GROUP BY.
+
+    Examples:
+
+    @begin{pre}
+      (set-select sph \"*, (user_karma+ln(pageviews))*0.1 AS myweight\" )
+      (set-select sph \"exp_years, salary_gbp*{$gbp_usd_rate@} AS salary_usd, IF(age>40,1,0) AS over40\" )
+      (set-select sph \"*, AVG(price) AS avgprice\" )
+    @end{pre}
+"))
+
+(defmethod set-select ((client sphinx-client) select)
+  (assert (stringp select))
+  (setf (select client) select)
+  client)
+
+
+(defgeneric reset-filters (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{client}
+    @short{Reset the filters.}
+
+    Clear all filters, including the geolocation anchor point.
+"))
+
+(defmethod reset-filters ((client sphinx-client))
+  (setf (filters client) ())
+  (setf (geo-anchor client) ())
+  client)
+
+
+(defgeneric reset-group-by (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{client}
+    @short{Clear all the group-by settings.}
+"))
+
+(defmethod reset-group-by ((client sphinx-client))
+  (setf (group-by client) "")
+  (setf (group-function client) +sph-groupby-day+)
+  (setf (group-sort client) "@group desc")
+  (setf (group-distinct client) "")
+  client)
+
+
+(defgeneric reset-overrides (client)
+  (:documentation
+   "@arg[client]{a @class{sphinx-client}}
+    @return{client}
+    @short{Clear all attribute value overrides.}
+"))
+
+(defmethod reset-overrides ((client sphinx-client))
+  (setf (overrides client) ())
+  client)
+
 
 (defgeneric query (client query &key index comment)
   (:documentation
@@ -622,12 +824,12 @@
                           (pack "N/a*" (group-sort client))
                           (pack "NNN" (cutoff client) (retry-count client) (retry-delay client))
                           (pack "N/a*" (group-distinct client))
-                          (cond ((anchor client)
+                          (cond ((geo-anchor client)
                                  (concatenate 'string
-                                              (pack "N/a*" (first (anchor client)))
-                                              (pack "N/a*" (third (anchor client)))
-                                              (%pack-float (second (anchor client)))
-                                              (%pack-float (fourth (anchor client)))))
+                                              (pack "N/a*" (first (geo-anchor client)))
+                                              (pack "N/a*" (third (geo-anchor client)))
+                                              (%pack-float (second (geo-anchor client)))
+                                              (%pack-float (fourth (geo-anchor client)))))
                                 (t
                                  (pack "N" 0)))
                           (%pack-hash (index-weights client))
@@ -964,5 +1166,4 @@
 
 (defun %pack-float (float-value)
   (pack "N" (unpack "L*" (pack "f" float-value))))
-
 
