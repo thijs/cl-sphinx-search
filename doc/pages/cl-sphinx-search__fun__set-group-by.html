@@ -5,7 +5,7 @@
 	  Package:
 	  <a href="cl-sphinx-search.html">cl-sphinx-search</a></p><h2 class="page-title">
 	  Function
-	  set-group-by</h2></div><table cellspacing="0" cellpadding="0" width="100%"><tr><td valign="top" width="60%"><div class="padded"><h3>Lambda List</h3><div class="indent"><tt>set-group-by</tt> (<b>client</b> <b>attribute</b> <b>function</b> <b>&amp;optional</b> <b>group-sort</b>)</div><h3>Arguments</h3><div class="indent"><ul><li><tt>client</tt> -- a <a href="cl-sphinx-search__class__sphinx-client.html"><tt>sphinx-client</tt></a></li><li><tt>attribute</tt> -- the attribute name to group by</li><li><tt>function</tt> -- the grouping function to use</li><li><tt>group-sort</tt> -- the sorting clause for group-by</li></ul></div><h3>Return Value</h3><div class="indent">client</div><h3>Details<a name="details"></a></h3><div class="indent">                    Set grouping options.<br><br>    <pre>
+	  set-group-by</h2></div><table cellspacing="0" cellpadding="0" width="100%"><tr><td valign="top" width="60%"><div class="padded"><h3>Lambda List</h3><div class="indent"><tt>set-group-by</tt> (<b>client</b> <b>attribute</b> <b>function</b> <b>&amp;optional</b> <b>group-sort</b>)</div><h3>Arguments</h3><div class="indent"><ul><li><tt>client</tt> -- a <a href="cl-sphinx-search__class__sphinx-client.html"><tt>sphinx-client</tt></a></li><li><tt>attribute</tt> -- the attribute name to group by</li><li><tt>function</tt> -- the grouping function to use</li><li><tt>group-sort</tt> -- the sorting clause for group-by</li></ul></div><h3>Return Value</h3><div class="indent">client</div><h3>Details<a name="details"></a></h3><div class="indent">                    Set grouping options.<br><br>        <br><br>    <pre>
     (set-group-by client &quot;whatever_attr&quot; +sph-groupby-attr+ &quot;group asc&quot;)
     (set-group-by client &quot;date_attr&quot; +sph-groupby-day+)    </pre><br><br>
     Sets attribute and function of results grouping.<br><br>
@@ -19,9 +19,9 @@
       of indexed attributes. The specified attribute may therefore not be the      last of the indexed attributes</dd></dl><br style="clear: both;"><br><br>
     Groups in the set of results can be sorted by any SQL-like sorting clause,
     including both document attributes and the following special internal
-    Sphinx attributes:<br><br>    <dl><dt>id</dt><dd> : document ID</dd><dt>weight, rank, relevance</dt><dd> : match weight</dd><dt>group</dt><dd> : group by function value</dd><dt>count</dt><dd> : number of matches in group</dd></dl><br style="clear: both;"><br><br>
+    Sphinx attributes:<br><br>    <dl><dt>@id</dt><dd> : document ID</dd><dt>@weight, @rank, @relevance</dt><dd> : match weight</dd><dt>@group</dt><dd> : group by function value</dd><dt>@count</dt><dd> : number of matches in group</dd></dl><br style="clear: both;"><br><br>
     The default mode is to sort by group-by value in descending order,
-    ie. by &quot;group desc&quot;.<br><br>    In the results set, <tt>total-found</tt> contains the total amount of
+    ie. by &quot;@group desc&quot;.<br><br>    In the results set, <tt>total-found</tt> contains the total amount of
     matching groups over the whole index.<br><br>
     WARNING: grouping is done in fixed memory and thus its results
     are only approximate; so there might be more groups reported    in <tt>total-found</tt> than actually present. <tt>count</tt> might
@@ -32,4 +32,4 @@
     matches published, with day number and per-day match count attached,
     and sorted by day number in descending order (ie. recent days first).</div></div></td><td valign="top" width="5%">
 	     
-	  </td><td valign="top" width="35%"><h3>See also</h3><div class="indent"><table cellspacing="0" cellpadding="0"><tr><td><a href="cl-sphinx-search__class__sphinx-client.html"><tt>sphinx-client</tt></a></td></tr><tr><td><a href="cl-sphinx-search__fun__reset-group-by.html"><tt>reset-group-by</tt></a></td></tr></table></div></td></tr></table></div></body></html>
+	  </td><td valign="top" width="35%"><h3>See also</h3><div class="indent"><table cellspacing="0" cellpadding="0"><tr><td><a href="cl-sphinx-search__class__sphinx-client.html"><tt>sphinx-client</tt></a></td></tr><tr><td><a href="cl-sphinx-search__fun__reset-group-by.html"><tt>reset-group-by</tt></a></td></tr><tr><td><a href="cl-sphinx-search__fun__set-group-by.html"><tt>set-group-by</tt></a></td></tr><tr><td><a href="cl-sphinx-search__fun__set-group-distinct.html"><tt>set-group-distinct</tt></a></td></tr></table></div></td></tr></table></div></body></html>

@@ -236,15 +236,18 @@
 
     @see{set-server}
     @see{set-limits}
-    @see{query}
-    @see{add-query}
-    @see{run-queries}
-    @see{last-error}
-    @see{last-warning}
     @see{set-id-range}
     @see{set-filter}
     @see{set-filter-range}
     @see{set-filter-float-range}
+    @see{set-geo-anchor}
+    @see{set-group-by}
+    @see{set-group-distinct}
+    @see{set-select}
+    @see{reset-filters}
+    @see{reset-group-by}
+    @see{reset-overrides)}
+    @see{last-warning}
     @see{max-query-time}
 "))
 
@@ -361,6 +364,13 @@
     select on multiple attributes.
 
     If @code{:exclude} is set, excludes results that match the filter.
+
+
+    @see{set-filter}
+    @see{set-filter-range}
+    @see{set-filter-float-range}
+    @see{set-geo-anchor}
+    @see{reset-filters}
 "))
 
 (defmethod set-filter ((client sphinx-client) attr values &key (exclude ()))
@@ -396,6 +406,13 @@
 
     If @code{:exclude} is set, excludes results that fall within the
     given range.
+
+
+    @see{set-filter}
+    @see{set-filter-range}
+    @see{set-filter-float-range}
+    @see{set-geo-anchor}
+    @see{reset-filters}
 "))
 
 (defmethod set-filter-range ((client sphinx-client) attr min max &key (exclude ()))
@@ -427,6 +444,13 @@
 
     If @code{:exclude} is set, excludes results that fall within the
     given range.
+
+
+    @see{set-filter}
+    @see{set-filter-range}
+    @see{set-filter-float-range}
+    @see{set-geo-anchor}
+    @see{reset-filters}
 "))
 
 (defmethod set-filter-float-range ((client sphinx-client) attr min max &key (exclude ()))
@@ -460,11 +484,18 @@
     the anchor point, use something like:
 
     @begin{pre}
-    (set-filter-float-range sph \"geodist\" 0 5000)
+    (set-filter-float-range sph \"@@geodist\" 0 5000)
     @end{pre}
 
     This will filter the results to be closer than 5 km from the anchor
     point.
+
+
+    @see{set-filter}
+    @see{set-filter-range}
+    @see{set-filter-float-range}
+    @see{set-geo-anchor}
+    @see{reset-filters}
 "))
 
 (defmethod set-geo-anchor ((client sphinx-client) lat-attr lat lon-attr lon)
@@ -481,6 +512,9 @@
     @arg[group-sort]{the sorting clause for group-by}
     @return{client}
     @short{Set grouping options.}
+
+    @see{set-group-by}
+    @see{set-group-distinct}
 
     @begin{pre}
     (set-group-by client \"whatever_attr\" +sph-groupby-attr+ \"group asc\")
@@ -521,14 +555,14 @@
     Sphinx attributes:
 
     @begin{dl}
-      @dt[id]{document ID}
-      @dt[weight, rank, relevance]{match weight}
-      @dt[group]{group by function value}
-      @dt[count]{number of matches in group}
+      @dt[@id]{document ID}
+      @dt[@weight, @rank, @relevance]{match weight}
+      @dt[@group]{group by function value}
+      @dt[@count]{number of matches in group}
     @end{dl}
 
     The default mode is to sort by group-by value in descending order,
-    ie. by \"group desc\".
+    ie. by \"@@group desc\".
 
     In the results set, @code{total-found} contains the total amount of
     matching groups over the whole index.
@@ -559,6 +593,11 @@
     @arg[attribute]{the attribute to use for count-distinct queries}
     @return{client}
     @short{Set count-distinct attribute for group-by queries.}
+
+
+    @see{set-group-by}
+    @see{set-group-distinct}
+    @see{reset-group-by}
 "))
 
 (defmethod set-group-distinct ((client sphinx-client) attribute)
@@ -646,6 +685,13 @@
     @short{Reset the filters.}
 
     Clear all filters, including the geolocation anchor point.
+
+
+    @see{set-filter}
+    @see{set-filter-range}
+    @see{set-filter-float-range}
+    @see{set-geo-anchor}
+    @see{reset-filters}
 "))
 
 (defmethod reset-filters ((client sphinx-client))
@@ -659,6 +705,11 @@
    "@arg[client]{a @class{sphinx-client}}
     @return{client}
     @short{Clear all the group-by settings.}
+
+
+    @see{set-group-by}
+    @see{set-group-distinct}
+    @see{reset-group-by}
 "))
 
 (defmethod reset-group-by ((client sphinx-client))
