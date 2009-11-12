@@ -188,7 +188,7 @@
    (overrides
     :accessor overrides
     :initarg :overrides
-    :initform ()
+    :initform (make-hash-table)
     :documentation "per-query attribute value overrides")
    (select
     :accessor select
