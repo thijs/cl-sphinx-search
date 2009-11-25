@@ -8,7 +8,7 @@
   (:use :cl :iolib.sockets :babel :cl-pack)
   (:export #:set-server
            #:set-limits
-           #:query
+           #:run-query
            #:add-query
            #:run-queries
            #:last-error
@@ -74,7 +74,7 @@
 
     Running queries:
 
-    @aboutfun{query}
+    @aboutfun{run-query}
     @aboutfun{add-query}
     @aboutfun{run-queries}
 

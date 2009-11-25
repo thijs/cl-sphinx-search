@@ -228,7 +228,7 @@
 
     Set options and settings of the search to be performed on an object
     of this class, and then have it perform one search by calling
-    @fun{query}, or add a number of queries using @fun{add-query} and
+    @fun{run-query}, or add a number of queries using @fun{add-query} and
     then calling @fun{run-queries}.
 
     Either get a result hash or a list of result hashes back, or an error
@@ -732,7 +732,7 @@
   client)
 
 
-(defgeneric query (client query &key index comment)
+(defgeneric run-query (client query &key index comment)
   (:documentation
    "@arg[client]{a @class{sphinx-client}}
     @arg[query]{the query to run through @code{searchd}}
@@ -742,7 +742,7 @@
     @short{Run a query through @code{searchd}.}
 
     @begin{pre}
-    (query client \"test\")
+    (run-query client \"test\")
     @end{pre}
 
     Query @code{searchd}. This method runs a single query through @code{searchd}.
@@ -765,7 +765,7 @@
 
 "))
 
-(defmethod query ((client sphinx-client) query &key (index "*") (comment ""))
+(defmethod run-query ((client sphinx-client) query &key (index "*") (comment ""))
   (assert (eql (length (reqs client)) 0))
   (add-query client query :index index :comment comment)
   (let* ((result (car (run-queries client))))
@@ -807,7 +807,7 @@
       @dt[words]{a hash-table containing the matching words with their statistics}
     @end{dl}
 
-    @see{query}
+    @see{run-query}
     @see{add-query}
 
 "))
@@ -855,7 +855,7 @@
     It returns the new length of the query queue, which is also the index
     of the newly added query in the queue.
 
-    @see{query}
+    @see{run-query}
     @see{run-queries}
 
 "))
