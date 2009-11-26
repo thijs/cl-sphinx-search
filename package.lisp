@@ -6,6 +6,7 @@
 
 (defpackage #:cl-sphinx-search
   (:use :cl :iolib.sockets :babel :cl-pack)
+  (:import-from :cl-sphinx-search-asd :*cl-sphinx-search-version*)
   (:export #:set-server
            #:set-limits
            #:run-query

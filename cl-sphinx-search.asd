@@ -12,9 +12,16 @@
 
 (in-package #:cl-sphinx-search-asd)
 
+
+(defvar *cl-sphinx-search-version* "0.0.1"
+  "A string denoting the current version of cl-sphinx-search.")
+
+(export '*cl-sphinx-search-version*)
+
+
 (defsystem #:cl-sphinx-search
   :name "CL-SPHINX-SEARCH"
-  :version "0.0.1"
+  :version #.*cl-sphinx-search-version*
   :maintainer "M.L. Oppermann <M.L.Oppermann@gmail.com>"
   :author "M.L. Oppermann <M.L.Oppermann@gmail.com>"
   :licence "To be determined"
